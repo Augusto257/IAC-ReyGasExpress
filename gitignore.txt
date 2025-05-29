@@ -1,0 +1,33 @@
+.terraform/
+
+# Ignorar archivos de estado de Terraform
+*.tfstate
+*.tfstate.backup
+
+# Archivos de plan y variables
+*.tfplan
+*.tfvars
+
+# Directorio donde Terraform guarda los plugins
+.terraform/
+
+# Archivos de bloqueo de Terraform
+.terraform.lock.hcl
+
+# Ignorar archivos binarios y ejecutables de proveedores de Terraform
+*.exe
+
+# Ignorar configuraciones locales de Terraform (si las hubiera)
+*.auto.tfvars
+
+# Archivos de log y temporales generados por Terraform
+*.log
+
+# Otros archivos temporales generados por editores (Visual Studio Code, etc.)
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Ignorar otros archivos potencialmente generados que no sean necesarios
+*.bak
