@@ -1,7 +1,9 @@
+# Configura nuestro firewall de aplicaciones web que protege de ataques web
 resource "aws_wafv2_web_acl" "reyGasExpress_waf" {
+  provider = aws.us_east_1
   name  = var.waf_name
   scope = "CLOUDFRONT"
-  
+
   default_action {
     allow {}
   }
