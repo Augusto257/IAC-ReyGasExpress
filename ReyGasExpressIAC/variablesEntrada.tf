@@ -1,5 +1,4 @@
 # Variables de entrada para WAF
-
 variable "waf_name" {
   description = "Nombre del WAF para ReyGasExpress"
   type        = string
@@ -18,7 +17,7 @@ variable "rate_limit" {
   default     = 2000
 }
 
-#Variables de entrada para CLOUDFRONT
+# Variables de entrada para CLOUDFRONT
 variable "aws_region" {
   description = "Región de AWS"
   type        = string
@@ -47,4 +46,24 @@ variable "cloudfront_price_class" {
   description = "Clase de precio para CloudFront"
   type        = string
   default     = "PriceClass_100"  # Solo US, Canada, Europa
+}
+
+# Variables de entrada para Cognito
+variable "cognito_user_pool_name" {
+  description = "Nombre del user pool de Cognito"
+  type        = string
+  default     = "ReyGasExpress-user-pool"
+}
+
+variable "cognito_user_pool_client_name" {
+  description = "Nombre del cliente del User Pool de Cognito"
+  type        = string
+  default     = "ReyGasExpress-client"
+}
+
+# Variables de entrada para IAM
+variable "lambda_execution_role_name" {
+  description = "Nombre del rol de ejecución de Lambda"
+  type        = string
+  default     = "lambda-execution-role-reyGasExpress"
 }
