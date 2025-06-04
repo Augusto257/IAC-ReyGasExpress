@@ -10,7 +10,7 @@ output "waf_web_acl_arn" {
   value       = aws_wafv2_web_acl.reyGasExpress_waf.arn
 }
 
-#Variables de salida para CLOUDFRONT
+# Variables de salida para CLOUDFRONT
 
 output "cloudfront_distribution_id" {
   description = "ID de la distribución CloudFront"
@@ -32,7 +32,7 @@ output "cloudfront_hosted_zone_id" {
   value       = aws_cloudfront_distribution.reygas_distribution.hosted_zone_id
 }
 
-# Salidas para SQS
+# Variables de salida para SQS
 output "sqs_order_queue_url" {
   description = "URL de la cola SQS de pedidos"
   value       = aws_sqs_queue.reyGasExpress_order_queue.id
@@ -41,4 +41,15 @@ output "sqs_order_queue_url" {
 output "sqs_order_queue_arn" {
   description = "ARN de la cola SQS de pedidos"
   value       = aws_sqs_queue.reyGasExpress_order_queue.arn
+}
+
+# Variables de salida para DynamoDB
+output "orders_table_name" {
+  description = "Nombre de la tabla DynamoDB de pedidos"
+  value       = aws_dynamodb_table.reyGasExpress_orders_table.name
+}
+
+output "orders_table_arn" {
+  description = "ARN de la tabla DynamoDB de pedidos"
+  value       = aws_dynamodb_table.reyGasExpress_orders_table.arn
 }

@@ -81,7 +81,6 @@ variable "sqs_order_dlq_name" {
   default     = "reyGasExpress-order-dlq"
 }
 
-# Variable para la ruta de los archivos zip de las lambdas
 variable "lambda_code_path" {
   description = "Ruta base a la carpeta que contiene los archivos ZIP de las lambdas."
   type        = string
@@ -96,7 +95,21 @@ variable "api_gateway_name" {
 }
 
 variable "api_stage_name" {
-  description = "Nombre del stage de la API Gateway (ej. dev, prod)"
+  description = "Nombre del stage de la API Gateway"
   type        = string
   default     = "dev"
+}
+
+# Variables de entrada para DynamoDB
+variable "orders_table_name" {
+  description = "Nombre de la tabla DynamoDB para almacenar pedidos procesados"
+  type        = string
+  default     = "reyGasExpress-orders-table"
+}
+
+# Variable para el EventBridge Bus
+variable "event_bus_name" {
+  description = "Nombre base para enviar eventos de pedidos procesados."
+  type        = string
+  default     = "reyGasExpress-orders-bus"
 }
