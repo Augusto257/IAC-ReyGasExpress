@@ -67,3 +67,36 @@ variable "lambda_execution_role_name" {
   type        = string
   default     = "lambda-execution-role-reyGasExpress"
 }
+
+# Variables de entrada para SQS
+variable "sqs_order_queue_name" {
+  description = "Nombre de la cola SQS para pedidos entrantes"
+  type        = string
+  default     = "reyGasExpress-order-queue"
+}
+
+variable "sqs_order_dlq_name" {
+  description = "Nombre de la cola SQS Dead-Letter para pedidos"
+  type        = string
+  default     = "reyGasExpress-order-dlq"
+}
+
+# Variable para la ruta de los archivos zip de las lambdas
+variable "lambda_code_path" {
+  description = "Ruta base a la carpeta que contiene los archivos ZIP de las lambdas."
+  type        = string
+  default     = "lambda_code"
+}
+
+# Variables de entrada para ApiGateway
+variable "api_gateway_name" {
+  description = "Nombre de la API Gateway HTTP"
+  type        = string
+  default     = "ReyGasExpress-API"
+}
+
+variable "api_stage_name" {
+  description = "Nombre del stage de la API Gateway (ej. dev, prod)"
+  type        = string
+  default     = "dev"
+}

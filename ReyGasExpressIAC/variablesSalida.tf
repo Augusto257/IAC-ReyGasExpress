@@ -31,3 +31,14 @@ output "cloudfront_hosted_zone_id" {
   description = "Hosted Zone ID de CloudFront"
   value       = aws_cloudfront_distribution.reygas_distribution.hosted_zone_id
 }
+
+# Salidas para SQS
+output "sqs_order_queue_url" {
+  description = "URL de la cola SQS de pedidos"
+  value       = aws_sqs_queue.reyGasExpress_order_queue.id
+}
+
+output "sqs_order_queue_arn" {
+  description = "ARN de la cola SQS de pedidos"
+  value       = aws_sqs_queue.reyGasExpress_order_queue.arn
+}
