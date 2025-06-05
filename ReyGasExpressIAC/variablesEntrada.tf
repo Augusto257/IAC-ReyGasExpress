@@ -113,3 +113,17 @@ variable "event_bus_name" {
   type        = string
   default     = "reyGasExpress-orders-bus"
 }
+
+# Variables para el bucket S3 de análisis
+variable "analysis_bucket_name" {
+  description = "Nombre del bucket S3 para almacenar los datos de análisis de preferencias."
+  type        = string
+  default     = "reygas-express-analysis" # Nombre base del bucket
+}
+
+# Variables para el tópico SNS de reportes
+variable "reports_topic_name" {
+  description = "Nombre del tópico SNS para notificaciones de reportes."
+  type        = string
+  default     = "reyGasExpress-reports-topic"
+}

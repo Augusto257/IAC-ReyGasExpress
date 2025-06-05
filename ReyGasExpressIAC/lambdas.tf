@@ -24,8 +24,6 @@ resource "aws_lambda_function" "register_order_lambda" {
   }
 }
 
-# lambdas.tf (Añadir al final del archivo)
-
 # Crea la función Lambda para "Procesar y almacenar pedidos"
 resource "aws_lambda_function" "process_order_lambda" {
   function_name = "reyGasExpress-processOrder-${var.environment}"
@@ -61,4 +59,66 @@ resource "aws_lambda_event_source_mapping" "process_order_sqs_trigger" {
   function_name    = aws_lambda_function.process_order_lambda.arn
   batch_size       = 10
   enabled          = true
+}
+
+# Crea la función Lambda para "Analizar Preferencias"
+resource "aws_lambda_function" "analyze_preferences_lambda" {
+  function_name = "reyGasExpress-analyzePreferences-${var.environment}"
+  handler       = "analyzePreferences.handler"
+  runtime       = "nodejs18.x"
+  role          = aws_iam_role.lambda_execution_role.arn
+
+  filename      = "${var.lambda_code_path}/analyzePreferences.zip"
+  source_code_hash = filebase64sha256("${var.lambda_code_path}/analyzePreferences.zip")
+
+  timeout       = 90 
+  memory_size   = 256
+
+  environment {
+    variables = {
+      ORDERS_TABLE_NAME    = aws_dynamodb_table.reyGasExpress_orders_table.name
+      ANALYSIS_BUCKET_NAME = aws_s3_bucket.reyGasExpress_analysis_bucket.id
+      REPORT_TOPIC_ARN     = aws_sns_topic.reyGasExpress_reports_topic.arn
+    }
+  }
+
+  tags = {
+    Environment = var.environment
+    Application = "reyGasExpress"
+    ManagedBy   = "Terraform"
+  }
+}
+
+# EventBridge Rule para invocar la Lambda analyzePreferences cuando se procesa un pedido
+resource "aws_cloudwatch_event_rule" "analyze_preferences_rule" {
+  name          = "reyGasExpress-analyzePreferences-rule-${var.environment}"
+  description   = "Captura eventos de pedidos procesados para análisis de preferencias."
+  event_bus_name = aws_cloudwatch_event_bus.reyGasExpress_event_bus.name
+
+  event_pattern = jsonencode({
+    source     = ["orders.system"],
+    "detail-type" = ["Order Processed"]
+  })
+
+  tags = {
+    Environment = var.environment
+    Application = "reyGasExpress"
+    ManagedBy   = "Terraform"
+  }
+}
+
+# Permiso para que EventBridge invoque la Lambda analyzePreferences
+resource "aws_lambda_permission" "allow_eventbridge_invoke_analyze_preferences_lambda" {
+  statement_id  = "AllowEventBridgeInvokeAnalyzePreferences"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.analyze_preferences_lambda.function_name
+  principal     = "events.amazonaws.com"
+  source_arn    = aws_cloudwatch_event_rule.analyze_preferences_rule.arn
+}
+
+# Target para la EventBridge Rule: la Lambda analyzePreferences
+resource "aws_cloudwatch_event_target" "analyze_preferences_lambda_target" {
+  rule      = aws_cloudwatch_event_rule.analyze_preferences_rule.name
+  arn       = aws_lambda_function.analyze_preferences_lambda.arn
+  event_bus_name = aws_cloudwatch_event_bus.reyGasExpress_event_bus.name # Nuestro EventBus personalizado
 }

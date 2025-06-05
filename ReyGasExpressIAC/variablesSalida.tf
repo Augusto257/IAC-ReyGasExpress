@@ -53,3 +53,20 @@ output "orders_table_arn" {
   description = "ARN de la tabla DynamoDB de pedidos"
   value       = aws_dynamodb_table.reyGasExpress_orders_table.arn
 }
+
+# Salidas para el bucket S3 de análisis
+output "analysis_bucket_name" {
+  description = "Nombre del bucket S3 para los datos de análisis."
+  value       = aws_s3_bucket.reyGasExpress_analysis_bucket.id
+}
+
+output "analysis_bucket_arn" {
+  description = "ARN del bucket S3 para los datos de análisis."
+  value       = aws_s3_bucket.reyGasExpress_analysis_bucket.arn
+}
+
+# Salidas para el tópico SNS de reportes
+output "reports_topic_arn" {
+  description = "ARN del tópico SNS de reportes."
+  value       = aws_sns_topic.reyGasExpress_reports_topic.arn
+}
