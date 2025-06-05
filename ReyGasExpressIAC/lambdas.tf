@@ -122,3 +122,38 @@ resource "aws_cloudwatch_event_target" "analyze_preferences_lambda_target" {
   arn       = aws_lambda_function.analyze_preferences_lambda.arn
   event_bus_name = aws_cloudwatch_event_bus.reyGasExpress_event_bus.name # Nuestro EventBus personalizado
 }
+
+# Crea la función Lambda para "Generar Documento de Reporte de preferencias"
+resource "aws_lambda_function" "generate_report_lambda" {
+  function_name = "reyGasExpress-generateReport-${var.environment}"
+  handler       = "generateReport.handler"
+  runtime       = "nodejs18.x"
+  role          = aws_iam_role.lambda_execution_role.arn
+
+  filename      = "${var.lambda_code_path}/generateReport.zip"
+  source_code_hash = filebase64sha256("${var.lambda_code_path}/generateReport.zip")
+
+  timeout       = 90
+  memory_size   = 256
+
+  environment {
+    variables = {
+      ANALYSIS_BUCKET_NAME = aws_s3_bucket.reyGasExpress_analysis_bucket.id
+      REPORTS_BUCKET_NAME  = aws_s3_bucket.reyGasExpress_reports_bucket.id
+      EMAIL_TOPIC_ARN      = aws_sns_topic.reyGasExpress_email_topic.arn
+    }
+  }
+
+  tags = {
+    Environment = var.environment
+    Application = "reyGasExpress"
+    ManagedBy   = "Terraform"
+  }
+}
+
+# Configura la suscripción de la Lambda generateReport al tópico SNS de reportes
+resource "aws_sns_topic_subscription" "generate_report_lambda_sns_subscription" {
+  topic_arn = aws_sns_topic.reyGasExpress_reports_topic.arn
+  protocol  = "lambda"
+  endpoint  = aws_lambda_function.generate_report_lambda.arn
+}

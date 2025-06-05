@@ -127,3 +127,17 @@ variable "reports_topic_name" {
   type        = string
   default     = "reyGasExpress-reports-topic"
 }
+
+# Variables para el bucket S3 de reportes
+variable "reports_bucket_name" {
+  description = "Nombre del bucket S3 para almacenar los reportes de preferencias generados."
+  type        = string
+  default     = "reygas-express-reports"
+}
+
+# Variables para el tópico SNS de email
+variable "email_topic_name" {
+  description = "Nombre del tópico SNS para notificaciones de envío de reportes por email."
+  type        = string
+  default     = "reyGasExpress-email-topic"
+}

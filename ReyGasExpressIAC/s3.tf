@@ -59,3 +59,24 @@ resource "aws_s3_bucket_public_access_block" "analysis_bucket_public_access_bloc
   ignore_public_acls      = true
   restrict_public_buckets = true
 }
+
+# Bucket S3 para almacenar los reportes de preferencias generados
+resource "aws_s3_bucket" "reyGasExpress_reports_bucket" {
+  bucket = var.reports_bucket_name
+
+  tags = {
+    Environment = var.environment
+    Application = "reyGasExpress"
+    ManagedBy   = "Terraform"
+  }
+}
+
+# Bloqueo de acceso público para el bucket de reportes
+resource "aws_s3_bucket_public_access_block" "reports_bucket_public_access_block" {
+  bucket = aws_s3_bucket.reyGasExpress_reports_bucket.id
+
+  block_public_acls       = true
+  block_public_policy     = true
+  ignore_public_acls      = true
+  restrict_public_buckets = true
+}

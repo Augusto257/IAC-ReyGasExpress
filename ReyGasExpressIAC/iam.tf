@@ -228,3 +228,70 @@ resource "aws_iam_role_policy_attachment" "lambda_sns_publish_attachment" {
   role       = aws_iam_role.lambda_execution_role.name
   policy_arn = aws_iam_policy.lambda_sns_publish_policy.arn
 }
+
+# Política para permitir a Lambda escribir en el nuevo bucket S3 de reportes
+resource "aws_iam_policy" "lambda_s3_write_reports_policy" {
+  name        = "reyGasExpress-lambda-s3-write-reports-policy-${var.environment}"
+  description = "Permite a Lambda escribir objetos en el bucket S3 de reportes."
+
+  policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [
+      {
+        Action   = ["s3:PutObject"],
+        Effect   = "Allow",
+        Resource = "${aws_s3_bucket.reyGasExpress_reports_bucket.arn}/*"
+      }
+    ]
+  })
+
+  tags = {
+    Environment = var.environment
+    Application = "reyGasExpress"
+    ManagedBy   = "Terraform"
+  }
+}
+
+# Adjunta la política de escritura de S3 de reportes al rol de ejecución de Lambda
+resource "aws_iam_role_policy_attachment" "lambda_s3_write_reports_attachment" {
+  role        = aws_iam_role.lambda_execution_role.name
+  policy_arn  = aws_iam_policy.lambda_s3_write_reports_policy.arn
+}
+
+# Política para permitir a Lambda publicar mensajes en el tópico SNS de emails
+resource "aws_iam_policy" "lambda_sns_email_publish_policy" {
+  name        = "reyGasExpress-lambda-sns-email-publish-policy-${var.environment}"
+  description = "Permite a Lambda publicar mensajes en el tópico SNS para notificaciones de email."
+
+  policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [
+      {
+        Action   = "sns:Publish",
+        Effect   = "Allow",
+        Resource = aws_sns_topic.reyGasExpress_email_topic.arn
+      }
+    ]
+  })
+
+  tags = {
+    Environment = var.environment
+    Application = "reyGasExpress"
+    ManagedBy   = "Terraform"
+  }
+}
+
+# Adjunta la política de SNS email publish al rol de ejecución de Lambda
+resource "aws_iam_role_policy_attachment" "lambda_sns_email_publish_attachment" {
+  role        = aws_iam_role.lambda_execution_role.name
+  policy_arn  = aws_iam_policy.lambda_sns_email_publish_policy.arn
+}
+
+# Permiso para que SNS invoque la Lambda generateReport
+resource "aws_lambda_permission" "allow_sns_invoke_generate_report_lambda" {
+  statement_id  = "AllowSNSInvokeGenerateReport"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.generate_report_lambda.function_name
+  principal     = "sns.amazonaws.com"
+  source_arn    = aws_sns_topic.reyGasExpress_reports_topic.arn
+}

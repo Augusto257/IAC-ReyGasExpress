@@ -8,3 +8,14 @@ resource "aws_sns_topic" "reyGasExpress_reports_topic" {
     ManagedBy   = "Terraform"
   }
 }
+
+# Tópico SNS para notificar cuando un reporte está listo para ser enviado por email
+resource "aws_sns_topic" "reyGasExpress_email_topic" {
+  name = var.email_topic_name
+
+  tags = {
+    Environment = var.environment
+    Application = "reyGasExpress"
+    ManagedBy   = "Terraform"
+  }
+}

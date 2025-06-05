@@ -70,3 +70,20 @@ output "reports_topic_arn" {
   description = "ARN del tópico SNS de reportes."
   value       = aws_sns_topic.reyGasExpress_reports_topic.arn
 }
+
+# Salidas para el bucket S3 de reportes
+output "reports_bucket_name" {
+  description = "Nombre del bucket S3 para los reportes generados."
+  value       = aws_s3_bucket.reyGasExpress_reports_bucket.id
+}
+
+output "reports_bucket_arn" {
+  description = "ARN del bucket S3 para los reportes generados."
+  value       = aws_s3_bucket.reyGasExpress_reports_bucket.arn
+}
+
+# Salidas para el tópico SNS de email
+output "email_topic_arn" {
+  description = "ARN del tópico SNS de email."
+  value       = aws_sns_topic.reyGasExpress_email_topic.arn
+}
