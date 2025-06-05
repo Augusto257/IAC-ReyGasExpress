@@ -157,3 +157,47 @@ resource "aws_sns_topic_subscription" "generate_report_lambda_sns_subscription" 
   protocol  = "lambda"
   endpoint  = aws_lambda_function.generate_report_lambda.arn
 }
+
+# Crea la función Lambda para "Enviar Reporte por correo"
+resource "aws_lambda_function" "send_email_report_lambda" {
+  function_name = "reyGasExpress-sendEmailReport-${var.environment}"
+  handler       = "sendEmailReport.handler"
+  runtime       = "nodejs18.x"
+  role          = aws_iam_role.lambda_execution_role.arn
+
+  filename         = "${var.lambda_code_path}/sendEmailReport.zip"
+  source_code_hash = filebase64sha256("${var.lambda_code_path}/sendEmailReport.zip")
+
+  timeout     = 60
+  memory_size = 192 # Un poco más de memoria si el reporte es grande
+
+  environment {
+    variables = {
+      REPORTS_BUCKET_NAME = aws_s3_bucket.reyGasExpress_reports_bucket.id
+      FROM_EMAIL          = var.from_email_address
+      TO_EMAIL            = var.to_email_address # Valor por defecto, puede ser sobrescrito por el payload SNS
+    }
+  }
+
+  tags = {
+    Environment = var.environment
+    Application = "reyGasExpress"
+    ManagedBy   = "Terraform"
+  }
+}
+
+# Configura la suscripción de la Lambda sendEmailReport al tópico SNS de email
+resource "aws_sns_topic_subscription" "send_email_report_lambda_sns_subscription" {
+  topic_arn = aws_sns_topic.reyGasExpress_email_topic.arn
+  protocol  = "lambda"
+  endpoint  = aws_lambda_function.send_email_report_lambda.arn
+}
+
+# Permiso para que SNS invoque la Lambda sendEmailReport
+resource "aws_lambda_permission" "allow_sns_invoke_send_email_report_lambda" {
+  statement_id  = "AllowSNSInvokeSendEmailReport"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.send_email_report_lambda.function_name
+  principal     = "sns.amazonaws.com"
+  source_arn    = aws_sns_topic.reyGasExpress_email_topic.arn
+}

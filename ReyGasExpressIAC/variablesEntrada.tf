@@ -141,3 +141,16 @@ variable "email_topic_name" {
   type        = string
   default     = "reyGasExpress-email-topic"
 }
+
+# Variables para la función Lambda "Enviar Reporte por correo"
+variable "from_email_address" {
+  description = "Dirección de correo electrónico verificada en SES desde la cual se enviarán los reportes."
+  type        = string
+  default     = "no-reply@tudominio.com"
+}
+
+variable "to_email_address" {
+  description = "Dirección de correo electrónico a la que se enviarán los reportes (puede ser sobrescrita por el payload del SNS)."
+  type        = string
+  default     = "destinatario@example.com"
+}

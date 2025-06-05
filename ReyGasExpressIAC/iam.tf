@@ -23,121 +23,36 @@ resource "aws_iam_role" "lambda_execution_role" {
   }
 }
 
-# Adjunta la política gestionada de AWS para la ejecución básica de Lambda
-resource "aws_iam_role_policy_attachment" "lambda_logging" {
-  role       = aws_iam_role.lambda_execution_role.name
-  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
-}
-
-# Asigna una política de permisos a un rol de IAM
-resource "aws_iam_role_policy_attachment" "lambda_s3_access" {
-  role       = aws_iam_role.lambda_execution_role.name
-  policy_arn = "arn:aws:iam::aws:policy/AmazonS3FullAccess"
-}
-
-# Política para permitir a lambda enviar mensajes SQS
-resource "aws_iam_policy" "lambda_sqs_send_policy" {
-  name        = "reyGasExpress-lambda-sqs-send-policy-${var.environment}"
-  description = "Permite a Lambda enviar mensajes a la cola de pedidos SQS"
+# Política consolidada para todos los permisos que las funciones Lambda necesitan
+# Esta política incluye permisos para CloudWatch Logs, SQS, DynamoDB, EventBridge, S3, y SNS/SES.
+resource "aws_iam_policy" "lambda_all_permissions_policy" {
+  name        = "reyGasExpress-lambda-all-permissions-policy-${var.environment}"
+  description = "Política consolidada para todos los permisos que las funciones Lambda de reyGasExpress necesitan."
 
   policy = jsonencode({
     Version = "2012-10-17",
     Statement = [
+      # Permisos para CloudWatch Logs (Esenciales para la ejecución de Lambda)
+      {
+        Action = [
+          "logs:CreateLogGroup",
+          "logs:CreateLogStream",
+          "logs:PutLogEvents"
+        ],
+        Effect   = "Allow",
+        Resource = "arn:aws:logs:${var.aws_region}:${data.aws_caller_identity.current.account_id}:log-group:/aws/lambda/*:*"
+      },
+      # Permisos para SQS: Enviar mensajes (registerOrder Lambda)
       {
         Action = [
           "sqs:SendMessage",
           "sqs:GetQueueAttributes",
-          "sqs:GetQueueUrl"   
+          "sqs:GetQueueUrl"
         ],
         Effect   = "Allow",
         Resource = aws_sqs_queue.reyGasExpress_order_queue.arn
-      }
-    ]
-  })
-
-  tags = {
-    Environment = var.environment
-    Application = "reyGasExpress"
-    ManagedBy   = "Terraform"
-  }
-}
-
-# Política de SQS al rol de ejecución de lamba
-resource "aws_iam_role_policy_attachment" "lambda_sqs_send_attachment" {
-  role       = aws_iam_role.lambda_execution_role.name
-  policy_arn = aws_iam_policy.lambda_sqs_send_policy.arn
-}
-
-# Política para permitir a Lambda escribir en la tabla DynamoDB de pedidos
-resource "aws_iam_policy" "lambda_dynamodb_write_policy" {
-  name        = "reyGasExpress-lambda-dynamodb-write-policy-${var.environment}"
-  description = "Permite a Lambda escribir elementos en la tabla DynamoDB de pedidos"
-
-  policy = jsonencode({
-    Version = "2012-10-17",
-    Statement = [
-      {
-        Action = [
-          "dynamodb:PutItem",
-          "dynamodb:UpdateItem",
-          "dynamodb:BatchWriteItem"
-        ],
-        Effect   = "Allow",
-        Resource = aws_dynamodb_table.reyGasExpress_orders_table.arn
-      }
-    ]
-  })
-
-  tags = {
-    Environment = var.environment
-    Application = "reyGasExpress"
-    ManagedBy   = "Terraform"
-  }
-}
-
-# Adjunta la política de escritura de DynamoDB al rol de ejecución de Lambda
-resource "aws_iam_role_policy_attachment" "lambda_dynamodb_write_attachment" {
-  role       = aws_iam_role.lambda_execution_role.name
-  policy_arn = aws_iam_policy.lambda_dynamodb_write_policy.arn
-}
-
-# Política para permitir a Lambda enviar eventos a EventBridge
-resource "aws_iam_policy" "lambda_eventbridge_put_events_policy" {
-  name        = "reyGasExpress-lambda-eventbridge-put-events-policy-${var.environment}"
-  description = "Permite a Lambda enviar eventos a EventBridge"
-
-  policy = jsonencode({
-    Version = "2012-10-17",
-    Statement = [
-      {
-        Action   = "events:PutEvents",
-        Effect   = "Allow",
-        Resource = "arn:aws:events:${var.aws_region}:${data.aws_caller_identity.current.account_id}:event-bus/${var.event_bus_name}-${var.environment}"
-      }
-    ]
-  })
-
-  tags = {
-    Environment = var.environment
-    Application = "reyGasExpress"
-    ManagedBy   = "Terraform"
-  }
-}
-
-# Adjunta la política de EventBridge al rol de ejecución de Lambda
-resource "aws_iam_role_policy_attachment" "lambda_eventbridge_put_events_attachment" {
-  role       = aws_iam_role.lambda_execution_role.name
-  policy_arn = aws_iam_policy.lambda_eventbridge_put_events_policy.arn
-}
-
-# Política para permitir a Lambda consumir mensajes de la cola SQS
-resource "aws_iam_policy" "lambda_sqs_receive_policy" {
-  name        = "reyGasExpress-lambda-sqs-receive-policy-${var.environment}"
-  description = "Permite a Lambda recibir y eliminar mensajes de la cola de pedidos SQS"
-
-  policy = jsonencode({
-    Version = "2012-10-17",
-    Statement = [
+      },
+      # Permisos para SQS: Recibir y eliminar mensajes (processOrder Lambda)
       {
         Action = [
           "sqs:ReceiveMessage",
@@ -146,31 +61,18 @@ resource "aws_iam_policy" "lambda_sqs_receive_policy" {
         ],
         Effect   = "Allow",
         Resource = aws_sqs_queue.reyGasExpress_order_queue.arn
-      }
-    ]
-  })
-
-  tags = {
-    Environment = var.environment
-    Application = "reyGasExpress"
-    ManagedBy   = "Terraform"
-  }
-}
-
-# Adjunta la política de recepción de SQS al rol de ejecución de Lambda
-resource "aws_iam_role_policy_attachment" "lambda_sqs_receive_attachment" {
-  role       = aws_iam_role.lambda_execution_role.name
-  policy_arn = aws_iam_policy.lambda_sqs_receive_policy.arn
-}
-
-# Política para permitir a Lambda leer datos de la tabla DynamoDB de pedidos (y su índice)
-resource "aws_iam_policy" "lambda_dynamodb_read_policy" {
-  name        = "reyGasExpress-lambda-dynamodb-read-policy-${var.environment}"
-  description = "Permite a Lambda leer elementos de la tabla DynamoDB de pedidos y su índice."
-
-  policy = jsonencode({
-    Version = "2012-10-17",
-    Statement = [
+      },
+      # Permisos para DynamoDB: Escribir elementos (processOrder Lambda)
+      {
+        Action = [
+          "dynamodb:PutItem",
+          "dynamodb:UpdateItem",
+          "dynamodb:BatchWriteItem"
+        ],
+        Effect   = "Allow",
+        Resource = aws_dynamodb_table.reyGasExpress_orders_table.arn
+      },
+      # Permisos para DynamoDB: Leer elementos (analyzePreferences, generateReport Lambdas)
       {
         Action = [
           "dynamodb:GetItem",
@@ -178,98 +80,62 @@ resource "aws_iam_policy" "lambda_dynamodb_read_policy" {
           "dynamodb:Scan"
         ],
         Effect   = "Allow",
-        # Necesita permisos sobre la tabla principal y el GSI
         Resource = [
           aws_dynamodb_table.reyGasExpress_orders_table.arn,
-          "${aws_dynamodb_table.reyGasExpress_orders_table.arn}/index/*"
+          "${aws_dynamodb_table.reyGasExpress_orders_table.arn}/index/*" # Para acceder a GSIs
         ]
-      }
-    ]
-  })
-
-  tags = {
-    Environment = var.environment
-    Application = "reyGasExpress"
-    ManagedBy   = "Terraform"
-  }
-}
-
-# Adjunta la política de lectura de DynamoDB al rol de ejecución de Lambda
-resource "aws_iam_role_policy_attachment" "lambda_dynamodb_read_attachment" {
-  role       = aws_iam_role.lambda_execution_role.name
-  policy_arn = aws_iam_policy.lambda_dynamodb_read_policy.arn
-}
-
-# Política para permitir a Lambda publicar mensajes en el tópico SNS de reportes
-resource "aws_iam_policy" "lambda_sns_publish_policy" {
-  name        = "reyGasExpress-lambda-sns-publish-policy-${var.environment}"
-  description = "Permite a Lambda publicar mensajes en el tópico SNS de reportes."
-
-  policy = jsonencode({
-    Version = "2012-10-17",
-    Statement = [
+      },
+      # Permisos para EventBridge: Enviar eventos (processOrder Lambda)
       {
-        Action   = "sns:Publish",
+        Action   = "events:PutEvents",
         Effect   = "Allow",
-        Resource = aws_sns_topic.reyGasExpress_reports_topic.arn
-      }
-    ]
-  })
-
-  tags = {
-    Environment = var.environment
-    Application = "reyGasExpress"
-    ManagedBy   = "Terraform"
-  }
-}
-
-# Adjunta la política de SNS publish al rol de ejecución de Lambda
-resource "aws_iam_role_policy_attachment" "lambda_sns_publish_attachment" {
-  role       = aws_iam_role.lambda_execution_role.name
-  policy_arn = aws_iam_policy.lambda_sns_publish_policy.arn
-}
-
-# Política para permitir a Lambda escribir en el nuevo bucket S3 de reportes
-resource "aws_iam_policy" "lambda_s3_write_reports_policy" {
-  name        = "reyGasExpress-lambda-s3-write-reports-policy-${var.environment}"
-  description = "Permite a Lambda escribir objetos en el bucket S3 de reportes."
-
-  policy = jsonencode({
-    Version = "2012-10-17",
-    Statement = [
+        Resource = "arn:aws:events:${var.aws_region}:${data.aws_caller_identity.current.account_id}:event-bus/${var.event_bus_name}-${var.environment}"
+      },
+      # Permisos para S3: Escribir objetos en el bucket de reportes (generateReport Lambda)
       {
         Action   = ["s3:PutObject"],
         Effect   = "Allow",
         Resource = "${aws_s3_bucket.reyGasExpress_reports_bucket.arn}/*"
-      }
-    ]
-  })
-
-  tags = {
-    Environment = var.environment
-    Application = "reyGasExpress"
-    ManagedBy   = "Terraform"
-  }
-}
-
-# Adjunta la política de escritura de S3 de reportes al rol de ejecución de Lambda
-resource "aws_iam_role_policy_attachment" "lambda_s3_write_reports_attachment" {
-  role        = aws_iam_role.lambda_execution_role.name
-  policy_arn  = aws_iam_policy.lambda_s3_write_reports_policy.arn
-}
-
-# Política para permitir a Lambda publicar mensajes en el tópico SNS de emails
-resource "aws_iam_policy" "lambda_sns_email_publish_policy" {
-  name        = "reyGasExpress-lambda-sns-email-publish-policy-${var.environment}"
-  description = "Permite a Lambda publicar mensajes en el tópico SNS para notificaciones de email."
-
-  policy = jsonencode({
-    Version = "2012-10-17",
-    Statement = [
+      },
+      # Permisos para S3: Leer objetos del bucket de análisis (analyzePreferences Lambda)
+      {
+        Action   = ["s3:GetObject"],
+        Effect   = "Allow",
+        Resource = "${aws_s3_bucket.reyGasExpress_analysis_bucket.arn}/*"
+      },
+      # Permisos para S3: Escribir objetos en el bucket de análisis (analyzePreferences Lambda)
+      {
+        Action   = ["s3:PutObject"],
+        Effect   = "Allow",
+        Resource = "${aws_s3_bucket.reyGasExpress_analysis_bucket.arn}/*"
+      },
+      # Permisos para S3: Leer objetos del bucket de reportes (sendEmailReport Lambda)
+      {
+        Action   = ["s3:GetObject"],
+        Effect   = "Allow",
+        Resource = "${aws_s3_bucket.reyGasExpress_reports_bucket.arn}/*"
+      },
+      # Permisos para SNS: Publicar mensajes en el tópico de reportes (analyzePreferences Lambda)
+      {
+        Action   = "sns:Publish",
+        Effect   = "Allow",
+        Resource = aws_sns_topic.reyGasExpress_reports_topic.arn
+      },
+      # Permisos para SNS: Publicar mensajes en el tópico de emails (generateReport Lambda)
       {
         Action   = "sns:Publish",
         Effect   = "Allow",
         Resource = aws_sns_topic.reyGasExpress_email_topic.arn
+      },
+      # Permisos para SES: Enviar correos electrónicos (sendEmailReport Lambda)
+      {
+        Action   = [
+          "ses:SendEmail",
+          "ses:SendRawEmail",
+          "ses:SendTemplatedEmail"
+        ],
+        Effect   = "Allow",
+        Resource = "*" # Permite enviar desde cualquier identidad verificada
       }
     ]
   })
@@ -281,17 +147,8 @@ resource "aws_iam_policy" "lambda_sns_email_publish_policy" {
   }
 }
 
-# Adjunta la política de SNS email publish al rol de ejecución de Lambda
-resource "aws_iam_role_policy_attachment" "lambda_sns_email_publish_attachment" {
+# Adjunta la política consolidada de permisos al rol de ejecución de Lambda
+resource "aws_iam_role_policy_attachment" "lambda_all_permissions_attachment" {
   role        = aws_iam_role.lambda_execution_role.name
-  policy_arn  = aws_iam_policy.lambda_sns_email_publish_policy.arn
-}
-
-# Permiso para que SNS invoque la Lambda generateReport
-resource "aws_lambda_permission" "allow_sns_invoke_generate_report_lambda" {
-  statement_id  = "AllowSNSInvokeGenerateReport"
-  action        = "lambda:InvokeFunction"
-  function_name = aws_lambda_function.generate_report_lambda.function_name
-  principal     = "sns.amazonaws.com"
-  source_arn    = aws_sns_topic.reyGasExpress_reports_topic.arn
+  policy_arn  = aws_iam_policy.lambda_all_permissions_policy.arn
 }
