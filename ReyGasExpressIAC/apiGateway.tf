@@ -85,7 +85,7 @@ resource "aws_lambda_permission" "allow_apigateway_invoke_register_order_lambda"
 # Crea un grupo de logs en Cloudwatch
 resource "aws_cloudwatch_log_group" "api_gateway_log_group" {
   name              = "/aws/apigateway/${aws_apigatewayv2_api.reyGasExpress_api.name}/${var.api_stage_name}"
-  retention_in_days = 7
+  retention_in_days = 365
 
   tags = {
     Environment = var.environment
