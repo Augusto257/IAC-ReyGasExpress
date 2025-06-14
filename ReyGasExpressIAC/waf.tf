@@ -80,6 +80,29 @@ resource "aws_wafv2_web_acl" "reyGasExpress_waf" {
     }
   }
 
+  #Regla 4 log4shellProtection
+  rule {
+  name     = "AWSManagedRulesKnownBadInputsRule"
+  priority = 10
+
+  override_action {
+    none {}
+  }
+
+  statement {
+    managed_rule_group_statement {
+      name        = "AWSManagedRulesKnownBadInputsRuleSet"
+      vendor_name = "AWS"
+    }
+  }
+
+  visibility_config {
+    sampled_requests_enabled = true
+    cloudwatch_metrics_enabled = true
+    metric_name = "log4shellProtection"
+  }
+}
+
   visibility_config {
     cloudwatch_metrics_enabled = true
     metric_name                = "reyGasExpressWebACL"
