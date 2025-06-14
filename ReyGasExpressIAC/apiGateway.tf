@@ -82,10 +82,61 @@ resource "aws_lambda_permission" "allow_apigateway_invoke_register_order_lambda"
   source_arn = "${aws_apigatewayv2_api.reyGasExpress_api.execution_arn}/*/*"
 }
 
+resource "aws_kms_key" "cloudwatch_logs_encryption" {
+  description             = "KMS key for encrypting CloudWatch logs"
+  deletion_window_in_days = 10
+  enable_key_rotation     = true
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Id      = "key-policy"
+    Statement = [
+      {
+        Effect    = "Allow"
+        Principal = {
+          AWS = "arn:aws:iam::aws:policy/CloudWatchLogsFullAccess"
+        }
+        Action    = "kms:Encrypt"
+        Resource  = "*"
+      },
+      {
+        Effect    = "Allow"
+        Principal = "*"
+        Action    = [
+          "kms:Decrypt",
+          "kms:GenerateDataKey",
+          "kms:DescribeKey"
+        ]
+        Resource  = "*"
+        Condition = {
+          StringEquals = {
+            "aws:RequestTag/CloudWatch" = "true"
+          }
+        }
+      },
+      {
+        Effect    = "Allow"
+        Principal = {
+          AWS = "arn:aws:iam::963527047110:root"
+        }
+        Action    = "kms:*"
+        Resource  = "*"
+      }
+    ]
+  })
+}
+
+resource "aws_kms_alias" "cloudwatch_logs_alias" {
+  name          = "alias/cloudwatch-logs"
+  target_key_id = aws_kms_key.cloudwatch_logs_encryption.key_id
+}
+
 # Crea un grupo de logs en Cloudwatch
 resource "aws_cloudwatch_log_group" "api_gateway_log_group" {
   name              = "/aws/apigateway/${aws_apigatewayv2_api.reyGasExpress_api.name}/${var.api_stage_name}"
   retention_in_days = 365
+
+  kms_key_id = aws_kms_key.cloudwatch_logs_encryption.arn
 
   tags = {
     Environment = var.environment
