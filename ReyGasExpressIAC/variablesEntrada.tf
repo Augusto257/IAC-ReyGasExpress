@@ -154,3 +154,8 @@ variable "to_email_address" {
   type        = string
   default     = "destinatario@example.com"
 }
+
+variable "acm_certificate_arn" {
+  description = "ARN of the ACM certificate to use with CloudFront"
+  type        = string
+}
