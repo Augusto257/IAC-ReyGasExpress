@@ -29,6 +29,10 @@ resource "aws_dynamodb_table" "reyGasExpress_orders_table" {
     enabled        = true
   }
 
+  point_in_time_recovery {  
+    enabled = true
+  }
+
   tags = {
     Environment = var.environment
     Application = "reyGasExpress"
