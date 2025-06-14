@@ -156,6 +156,10 @@ resource "aws_lambda_function" "generate_report_lambda" {
     }
   }
 
+  tracing_config {
+    mode = "Active"
+  }
+
   tags = {
     Environment = var.environment
     Application = "reyGasExpress"
