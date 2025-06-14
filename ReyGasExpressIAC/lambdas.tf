@@ -219,6 +219,11 @@ resource "aws_lambda_function" "send_email_report_lambda" {
     mode = "Active"
   }
 
+  vpc_config {
+    subnet_ids         = var.lambda_subnet_ids         
+    security_group_ids = var.lambda_security_group_ids 
+  }
+
   tags = {
     Environment = var.environment
     Application = "reyGasExpress"
