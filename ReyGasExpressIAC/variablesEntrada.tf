@@ -159,3 +159,11 @@ variable "acm_certificate_arn" {
   description = "ARN of the ACM certificate to use with CloudFront"
   type        = string
 }
+
+variable "lambda_subnet_ids" {
+  type = list(string)
+}
+
+variable "lambda_security_group_ids" {
+  type = list(string)
+}

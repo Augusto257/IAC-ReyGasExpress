@@ -21,6 +21,11 @@ resource "aws_lambda_function" "register_order_lambda" {
     mode = "Active"
   }
 
+  vpc_config {
+    subnet_ids         = var.lambda_subnet_ids         
+    security_group_ids = var.lambda_security_group_ids 
+  }
+
   tags = {
     Environment = var.environment
     Application = "reyGasExpress"
