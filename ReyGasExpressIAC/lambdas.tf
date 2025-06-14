@@ -90,6 +90,10 @@ resource "aws_lambda_function" "analyze_preferences_lambda" {
     }
   }
 
+  tracing_config {
+    mode = "Active"
+  }
+
   tags = {
     Environment = var.environment
     Application = "reyGasExpress"
