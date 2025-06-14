@@ -26,6 +26,7 @@ resource "aws_apigatewayv2_route" "register_order_route" {
   api_id    = aws_apigatewayv2_api.reyGasExpress_api.id
   route_key = "POST /orders"
   target    = "integrations/${aws_apigatewayv2_integration.register_order_lambda_integration.id}"
+  authorization_type = "AWS_IAM"
 }
 
 # Crea un despligue de la API
