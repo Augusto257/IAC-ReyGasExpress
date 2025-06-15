@@ -53,6 +53,8 @@ resource "aws_lambda_function" "process_order_lambda" {
   timeout       = 60
   memory_size   = 256
 
+  reserved_concurrent_executions = 10
+
   # Variables de entorno para la Lambda
   environment {
     variables = {
