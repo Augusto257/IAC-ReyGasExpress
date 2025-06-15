@@ -240,6 +240,10 @@ resource "aws_lambda_function" "send_email_report_lambda" {
     security_group_ids = var.lambda_security_group_ids 
   }
 
+  dead_letter_config {
+    target_arn = aws_sqs_queue.reyGasExpress_dlq.arn
+  }
+
   tags = {
     Environment = var.environment
     Application = "reyGasExpress"
