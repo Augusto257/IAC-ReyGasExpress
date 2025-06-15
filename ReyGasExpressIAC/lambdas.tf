@@ -11,6 +11,8 @@ resource "aws_lambda_function" "register_order_lambda" {
   timeout       = 30
   memory_size   = 128 
 
+  reserved_concurrent_executions = 10
+
   environment {
     variables = {
       SQS_QUEUE_URL = aws_sqs_queue.reyGasExpress_order_queue.id
