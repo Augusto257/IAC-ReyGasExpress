@@ -11,6 +11,7 @@ resource "aws_lambda_function" "register_order_lambda" {
   timeout       = 30
   memory_size   = 128 
 
+  code_signing_config_arn = aws_lambda_code_signing_config.lambda_code_signing_config.arn
   reserved_concurrent_executions = 10
 
   environment {
@@ -284,4 +285,23 @@ resource "aws_lambda_permission" "allow_sns_invoke_send_email_report_lambda" {
   function_name = aws_lambda_function.send_email_report_lambda.function_name
   principal     = "sns.amazonaws.com"
   source_arn    = aws_sns_topic.reyGasExpress_email_topic.arn
+}
+
+resource "aws_signer_signing_profile" "lambda_signing_profile" {
+  name     = "reyGasExpressSigningProfile"
+  platform_id = "AWSLambda-SHA384-ECDSA" # Plataforma compatible con Lambda
+}
+
+resource "aws_lambda_code_signing_config" "lambda_code_signing_config" {
+  allowed_publishers {
+    signing_profile_version_arns = [
+      aws_signer_signing_profile.lambda_signing_profile.version_arn
+    ]
+  }
+
+  policies {
+    untrusted_artifact_on_deployment = "Enforce"
+  }
+
+  description = "Code signing config for reyGasExpress Lambda functions"
 }
