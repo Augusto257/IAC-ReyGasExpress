@@ -236,6 +236,7 @@ resource "aws_lambda_function" "send_email_report_lambda" {
   memory_size = 192 # Un poco más de memoria si el reporte es grande
 
   reserved_concurrent_executions = 10
+  code_signing_config_arn = aws_lambda_code_signing_config.lambda_code_signing_config.arn
 
   environment {
     variables = {
