@@ -26,6 +26,10 @@ resource "aws_lambda_function" "register_order_lambda" {
     security_group_ids = var.lambda_security_group_ids 
   }
 
+  dead_letter_config {
+    target_arn = aws_sqs_queue.reyGasExpress_dlq.arn
+  }
+
   tags = {
     Environment = var.environment
     Application = "reyGasExpress"
@@ -228,6 +232,15 @@ resource "aws_lambda_function" "send_email_report_lambda" {
     Environment = var.environment
     Application = "reyGasExpress"
     ManagedBy   = "Terraform"
+  }
+}
+
+resource "aws_sqs_queue" "reyGasExpress_dlq" {
+  name = "reyGasExpress-registerOrder-dlq-${var.environment}"
+  
+  tags = {
+    Environment = var.environment
+    Application = "reyGasExpress"
   }
 }
 
