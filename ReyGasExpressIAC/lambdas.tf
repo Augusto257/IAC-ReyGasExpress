@@ -181,6 +181,8 @@ resource "aws_lambda_function" "generate_report_lambda" {
   timeout       = 90
   memory_size   = 256
 
+  reserved_concurrent_executions = 10
+
   environment {
     variables = {
       ANALYSIS_BUCKET_NAME = aws_s3_bucket.reyGasExpress_analysis_bucket.id
