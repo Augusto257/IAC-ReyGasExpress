@@ -55,6 +55,7 @@ resource "aws_lambda_function" "process_order_lambda" {
   memory_size   = 256
 
   reserved_concurrent_executions = 10
+  code_signing_config_arn = aws_lambda_code_signing_config.lambda_code_signing_config.arn
 
   # Variables de entorno para la Lambda
   environment {
