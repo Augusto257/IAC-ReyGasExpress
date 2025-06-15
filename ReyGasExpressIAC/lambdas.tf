@@ -104,6 +104,8 @@ resource "aws_lambda_function" "analyze_preferences_lambda" {
   timeout       = 90 
   memory_size   = 256
 
+  reserved_concurrent_executions = 10
+
   environment {
     variables = {
       ORDERS_TABLE_NAME    = aws_dynamodb_table.reyGasExpress_orders_table.name
