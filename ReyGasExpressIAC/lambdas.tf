@@ -231,6 +231,8 @@ resource "aws_lambda_function" "send_email_report_lambda" {
   timeout     = 60
   memory_size = 192 # Un poco más de memoria si el reporte es grande
 
+  reserved_concurrent_executions = 10
+
   environment {
     variables = {
       REPORTS_BUCKET_NAME = aws_s3_bucket.reyGasExpress_reports_bucket.id
