@@ -2,31 +2,83 @@ const AWS = require('aws-sdk');
 const dynamodb = new AWS.DynamoDB.DocumentClient();
 const s3 = new AWS.S3();
 const sns = new AWS.SNS();
+const cloudwatch = new AWS.CloudWatch(); 
 
 exports.handler = async (event) => {
     console.log('Lambda: Analizar Preferencias invocada');
     console.log('Evento EventBridge recibido:', JSON.stringify(event, null, 2));
-    
+
+    let customerId = 'unknown'; 
+
     try {
-        // Procesar evento de EventBridge
         for (const record of event.Records || [event]) {
             const eventDetail = record.detail || event.detail;
-            const { orderId, customerId, preferences, items } = eventDetail;
+            const { orderId, customerId: currentCustomerId, preferences, items } = eventDetail;
+            customerId = currentCustomerId || 'unknown';
 
-            // Obtener datos históricos del cliente desde DynamoDB
+            console.log(`Iniciando análisis para cliente: ${customerId}`);
+
+            await cloudwatch.putMetricData({
+                MetricData: [
+                    {
+                        MetricName: 'PreferenceAnalysisStarted',
+                        Dimensions: [{ Name: 'LambdaFunction', Value: 'analyzePreferences' }],
+                        Unit: 'Count',
+                        Value: 1.0
+                    }
+                ],
+                Namespace: 'ReyGasExpress/Metrics'
+            }).promise();
+            console.log('Métrica PreferenceAnalysisStarted publicada.');
+
             const queryParams = {
                 TableName: process.env.ORDERS_TABLE_NAME,
-                IndexName: 'customer-index', // Asume que tienes un GSI por customerId
+                IndexName: 'customer-index',
                 KeyConditionExpression: 'customerId = :customerId',
                 ExpressionAttributeValues: {
                     ':customerId': customerId
                 },
-                Limit: 50 // Últimas 50 órdenes para análisis
+                Limit: 50
             };
 
-            const historicalData = await dynamodb.query(queryParams).promise();
+            let historicalData;
+            try {
+                historicalData = await dynamodb.query(queryParams).promise();
+                console.log(`Datos históricos de DynamoDB obtenidos para ${customerId}. Items: ${historicalData.Count}`);
+
+                await cloudwatch.putMetricData({
+                    MetricData: [
+                        {
+                            MetricName: 'DynamoDBQuerySuccess',
+                            Dimensions: [{ Name: 'LambdaFunction', Value: 'analyzePreferences' }],
+                            Unit: 'Count',
+                            Value: 1.0
+                        }
+                    ],
+                    Namespace: 'ReyGasExpress/Metrics'
+                }).promise();
+            } catch (dbError) {
+                console.error(`ERROR al consultar DynamoDB para ${customerId}:`, dbError);
+                await cloudwatch.putMetricData({
+                    MetricData: [
+                        {
+                            MetricName: 'DynamoDBQueryError',
+                            Dimensions: [{ Name: 'LambdaFunction', Value: 'analyzePreferences' }],
+                            Unit: 'Count',
+                            Value: 1.0
+                        },
+                         {
+                            MetricName: 'ConnectionError',
+                            Dimensions: [{ Name: 'Service', Value: 'DynamoDB' }],
+                            Unit: 'Count',
+                            Value: 1.0
+                        }
+                    ],
+                    Namespace: 'ReyGasExpress/Metrics'
+                }).promise();
+                throw dbError;
+            }
             
-            // Análisis de preferencias
             const analysis = {
                 customerId,
                 analysisDate: new Date().toISOString(),
@@ -36,18 +88,49 @@ exports.handler = async (event) => {
                 trends: identifyTrends(historicalData.Items)
             };
 
-            // Guardar análisis en S3
             const s3Key = `preferences-analysis/${customerId}/${Date.now()}.json`;
-            await s3.putObject({
-                Bucket: process.env.ANALYSIS_BUCKET_NAME,
-                Key: s3Key,
-                Body: JSON.stringify(analysis, null, 2),
-                ContentType: 'application/json'
-            }).promise();
+            try {
+                await s3.putObject({
+                    Bucket: process.env.ANALYSIS_BUCKET_NAME,
+                    Key: s3Key,
+                    Body: JSON.stringify(analysis, null, 2),
+                    ContentType: 'application/json'
+                }).promise();
+                console.log('Análisis guardado en S3:', s3Key);
 
-            console.log('Análisis guardado en S3:', s3Key);
+                await cloudwatch.putMetricData({
+                    MetricData: [
+                        {
+                            MetricName: 'S3PutSuccess',
+                            Dimensions: [{ Name: 'LambdaFunction', Value: 'analyzePreferences' }],
+                            Unit: 'Count',
+                            Value: 1.0
+                        }
+                    ],
+                    Namespace: 'ReyGasExpress/Metrics'
+                }).promise();
+            } catch (s3Error) {
+                console.error(`ERROR al guardar en S3 para ${customerId}:`, s3Error);
+                await cloudwatch.putMetricData({
+                    MetricData: [
+                        {
+                            MetricName: 'S3WriteError',
+                            Dimensions: [{ Name: 'LambdaFunction', Value: 'analyzePreferences' }],
+                            Unit: 'Count',
+                            Value: 1.0
+                        },
+                         {
+                            MetricName: 'ConnectionError',
+                            Dimensions: [{ Name: 'Service', Value: 'S3' }],
+                            Unit: 'Count',
+                            Value: 1.0
+                        }
+                    ],
+                    Namespace: 'ReyGasExpress/Metrics'
+                }).promise();
+                throw s3Error;
+            }
 
-            // Notificar para generar reporte si hay insights significativos
             if (analysis.preferences.significantChanges || analysis.totalOrders % 10 === 0) {
                 await sns.publish({
                     TopicArn: process.env.REPORT_TOPIC_ARN,
@@ -59,57 +142,40 @@ exports.handler = async (event) => {
                     }),
                     Subject: `Análisis de preferencias completado - Cliente ${customerId}`
                 }).promise();
+                console.log(`Notificación SNS enviada para reporte de ${customerId}`);
+
+                await cloudwatch.putMetricData({
+                    MetricData: [
+                        {
+                            MetricName: 'ReportNotificationSent',
+                            Dimensions: [{ Name: 'LambdaFunction', Value: 'analyzePreferences' }],
+                            Unit: 'Count',
+                            Value: 1.0
+                        }
+                    ],
+                    Namespace: 'ReyGasExpress/Metrics'
+                }).promise();
             }
         }
 
+        console.log('FIN de analyzePreferences. Éxito.');
         return { statusCode: 200 };
 
     } catch (error) {
-        console.error('Error en analyzePreferences:', error);
+        console.error(`ERROR CRÍTICO en analyzePreferences para cliente ${customerId}:`, error);
+
+        await cloudwatch.putMetricData({
+            MetricData: [
+                {
+                    MetricName: 'AnalysisError',
+                    Dimensions: [{ Name: 'LambdaFunction', Value: 'analyzePreferences' }],
+                    Unit: 'Count',
+                    Value: 1.0
+                }
+            ],
+            Namespace: 'ReyGasExpress/Metrics'
+        }).promise();
+
         throw error;
     }
 };
-
-// Funciones auxiliares para análisis
-function analyzeCustomerPreferences(historicalOrders, currentPreferences) {
-    const categoryFrequency = {};
-    const priceRanges = [];
-    
-    historicalOrders.forEach(order => {
-        order.items.forEach(item => {
-            categoryFrequency[item.category] = (categoryFrequency[item.category] || 0) + 1;
-        });
-        priceRanges.push(order.totalAmount);
-    });
-
-    return {
-        favoriteCategories: Object.entries(categoryFrequency)
-            .sort(([,a], [,b]) => b - a)
-            .slice(0, 3),
-        averageOrderValue: priceRanges.reduce((a, b) => a + b, 0) / priceRanges.length,
-        currentPreferences,
-        significantChanges: detectPreferenceChanges(historicalOrders, currentPreferences)
-    };
-}
-
-function generateRecommendations(historicalOrders, currentItems) {
-    // Lógica simple de recomendaciones basada en patrones
-    return {
-        suggestedItems: ['Recomendación basada en historial'],
-        crossSellOpportunities: ['Productos complementarios'],
-        seasonalRecommendations: ['Productos de temporada']
-    };
-}
-
-function identifyTrends(historicalOrders) {
-    return {
-        orderFrequency: 'monthly',
-        spendingTrend: 'increasing',
-        categoryShifts: []
-    };
-}
-
-function detectPreferenceChanges(historical, current) {
-    // Detectar cambios significativos en preferencias
-    return Math.random() > 0.8; // Simplificado
-}

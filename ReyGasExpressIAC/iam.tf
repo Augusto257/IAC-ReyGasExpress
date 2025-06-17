@@ -1,5 +1,3 @@
-# Permite a las funciones Lambda asumir una identidad en AWS para ejecutar su código
-# y acceder a otros servicios de AWS de forma segura
 resource "aws_iam_role" "lambda_execution_role" {
   name = var.lambda_execution_role_name
 
@@ -41,6 +39,16 @@ resource "aws_iam_policy" "lambda_all_permissions_policy" {
         ],
         Effect   = "Allow",
         Resource = "arn:aws:logs:${var.aws_region}:${data.aws_caller_identity.current.account_id}:log-group:/aws/lambda/*:*"
+      },
+      {
+        Action = [
+          "cloudwatch:PutMetricData",
+          "cloudwatch:GetMetricData",
+          "cloudwatch:GetMetricStatistics",
+          "cloudwatch:ListMetrics"
+        ],
+        Effect   = "Allow",
+        Resource = "*"  # CloudWatch no soporta ARNs específicos para métricas
       },
       # Permisos para SQS: Enviar mensajes (registerOrder Lambda)
       {
@@ -137,6 +145,7 @@ resource "aws_iam_policy" "lambda_all_permissions_policy" {
         Effect   = "Allow",
         Resource = "*" # Permite enviar desde cualquier identidad verificada
       }
+
     ]
   })
 
