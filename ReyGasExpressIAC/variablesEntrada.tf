@@ -150,7 +150,7 @@ variable "from_email_address" {
 }
 
 variable "to_email_address" {
-  description = "Dirección de correo electrónico a la que se enviarán los reportes (puede ser sobrescrita por el payload del SNS)."
+  description = "Dirección de correo electrónico a la que se enviarán los reportes."
   type        = string
   default     = "destinatario@example.com"
 }
@@ -161,9 +161,15 @@ variable "acm_certificate_arn" {
 }
 
 variable "lambda_subnet_ids" {
-  type = list(string)
+  description = "IDs de las subredes donde se desplegarán las Lambdas"
+  type        = list(string)
+  default     = [] 
 }
 
-variable "lambda_security_group_ids" {
-  type = list(string)
-}
+#variable "lambda_subnet_ids" {
+#  type = list(string)
+#}
+
+#variable "lambda_security_group_ids" {
+#  type = list(string)
+#}

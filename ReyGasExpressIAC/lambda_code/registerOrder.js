@@ -1,80 +1,112 @@
-const AWS = require('aws-sdk');
-const sqs = new AWS.SQS();
+const { SQSClient, SendMessageCommand } = require('@aws-sdk/client-sqs');
+const { CloudWatchClient, PutMetricDataCommand } = require('@aws-sdk/client-cloudwatch');
+
+const sqs = new SQSClient({ region: process.env.AWS_REGION });
+const cloudwatch = new CloudWatchClient({ region: process.env.AWS_REGION });
+
+function log(level, message, context = {}) {
+    const entry = {
+        level,
+        message,
+        timestamp: new Date().toISOString(),
+        function: 'registerOrder',
+        ...context
+    };
+    console.log(JSON.stringify(entry));
+}
 
 exports.handler = async (event) => {
-    console.log('Lambda: Registrar Datos de Pedido invocada');
-    console.log('Evento recibido:', JSON.stringify(event, null, 2));
+    log('INFO', 'Lambda iniciada', { event });
+
+    let statusCode = 200;
+    let response = {
+        message: 'Pedido recibido y encolado para procesamiento.',
+        orderId: null,
+        details: null
+    };
 
     try {
-        // Extraer datos del evento (API Gateway)
-        const body = typeof event.body === 'string' ? JSON.parse(event.body) : event.body;
+        await cloudwatch.send(new PutMetricDataCommand({
+            Namespace: 'ReyGasExpress/Metrics',
+            MetricData: [{
+                MetricName: 'ApiGatewayRequests',
+                Dimensions: [
+                    { Name: 'Function', Value: 'registerOrder' },
+                    { Name: 'Method', Value: event.httpMethod || 'UNKNOWN' }
+                ],
+                Unit: 'Count',
+                Value: 1
+            }]
+        }));
 
-        // Validar campos requeridos del pedido
+        const body = typeof event.body === 'string' ? JSON.parse(event.body) : event.body;
         const { customerId, items, totalAmount, preferences } = body;
 
         if (!customerId || !items || !totalAmount) {
-            return {
-                statusCode: 400,
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Access-Control-Allow-Origin': '*',
-                },
-                body: JSON.stringify({
-                    error: 'Campos requeridos: customerId, items, totalAmount'
+            statusCode = 400;
+            response.message = 'Datos incompletos';
+            response.details = 'Campos requeridos: customerId, items, totalAmount';
+            
+            log('WARN', 'Validación fallida', { body });
+            
+            await cloudwatch.send(new PutMetricDataCommand({
+                Namespace: 'ReyGasExpress/Metrics',
+                MetricData: [{
+                    MetricName: 'ValidationError',
+                    Dimensions: [{ Name: 'Function', Value: 'registerOrder' }],
+                    Unit: 'Count',
+                    Value: 1
+                }]
+            }));
+        } else {
+            response.orderId = `order-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+            
+            await sqs.send(new SendMessageCommand({
+                QueueUrl: process.env.SQS_QUEUE_URL,
+                MessageBody: JSON.stringify({
+                    orderId: response.orderId,
+                    customerId,
+                    items,
+                    totalAmount,
+                    preferences: preferences || {},
+                    timestamp: new Date().toISOString(),
+                    status: 'pending'
                 }),
-            };
+                MessageAttributes: {
+                    OrderType: { DataType: 'String', StringValue: 'new-order' }
+                }
+            }));
+
+            log('INFO', 'Pedido enviado a SQS', { orderId: response.orderId });
         }
 
-        // Preparar mensaje para SQS
-        const orderMessage = {
-            orderId: `order-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-            customerId,
-            items,
-            totalAmount,
-            preferences: preferences || {},
-            timestamp: new Date().toISOString(),
-            status: 'pending'
-        };
-
-        // Enviar a SQS
-        const sqsParams = {
-            QueueUrl: process.env.SQS_QUEUE_URL,
-            MessageBody: JSON.stringify(orderMessage),
-            MessageAttributes: {
-                'OrderType': {
-                    DataType: 'String',
-                    StringValue: 'new-order'
-                }
-            }
-        };
-
-        await sqs.sendMessage(sqsParams).promise();
-        console.log('Mensaje enviado a SQS:', orderMessage.orderId);
-
-        return {
-            statusCode: 200,
-            headers: {
-                'Content-Type': 'application/json',
-                'Access-Control-Allow-Origin': '*',
-            },
-            body: JSON.stringify({
-                message: 'Pedido recibido y encolado para procesamiento.',
-                orderId: orderMessage.orderId
-            }),
-        };
-
     } catch (error) {
-        console.error('Error en registerOrder:', error);
-        return {
-            statusCode: 500,
-            headers: {
-                'Content-Type': 'application/json',
-                'Access-Control-Allow-Origin': '*',
-            },
-            body: JSON.stringify({
-                error: 'Error interno del servidor',
-                details: error.message
-            }),
-        };
+        statusCode = 500;
+        response.message = 'Error interno';
+        response.details = error.message;
+        
+        log('ERROR', 'Error en registerOrder', { 
+            error: error.message,
+            stack: error.stack 
+        });
+
+        await cloudwatch.send(new PutMetricDataCommand({
+            Namespace: 'ReyGasExpress/Metrics',
+            MetricData: [{
+                MetricName: 'InternalError',
+                Dimensions: [
+                    { Name: 'Function', Value: 'registerOrder' },
+                    { Name: 'ErrorType', Value: error.name || 'Unknown' }
+                ],
+                Unit: 'Count',
+                Value: 1
+            }]
+        }));
     }
+
+    return {
+        statusCode,
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+        body: JSON.stringify(response)
+    };
 };

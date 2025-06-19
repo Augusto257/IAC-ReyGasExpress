@@ -1,8 +1,7 @@
 # Crea la API HTTP  para conectar a la función "Registrar datos de pedido"
 resource "aws_apigatewayv2_api" "reyGasExpress_api" {
   name          = "reyGasExpress-api-${var.environment}"
-  protocol_type = "HTTP" # Es una API HTTP
-  target        = aws_lambda_function.register_order_lambda.invoke_arn
+  protocol_type = "HTTP"
 
   tags = {
     Environment = var.environment
@@ -11,8 +10,7 @@ resource "aws_apigatewayv2_api" "reyGasExpress_api" {
   }
 }
 
-# Se define la integración que conecta el ApiGateway con la función "Registrar datos de pedido"
-# para manejar solicitudes POST
+# Integración para register_order_lambda
 resource "aws_apigatewayv2_integration" "register_order_lambda_integration" {
   api_id             = aws_apigatewayv2_api.reyGasExpress_api.id
   integration_type   = "AWS_PROXY"
@@ -21,7 +19,43 @@ resource "aws_apigatewayv2_integration" "register_order_lambda_integration" {
   timeout_milliseconds = 29000
 }
 
-# Configura la ruta POST /orders en la API
+# Integración para process_order_lambda
+resource "aws_apigatewayv2_integration" "process_order_lambda_integration" {
+  api_id             = aws_apigatewayv2_api.reyGasExpress_api.id
+  integration_type   = "AWS_PROXY"
+  integration_method = "POST"
+  integration_uri    = aws_lambda_function.process_order_lambda.invoke_arn
+  timeout_milliseconds = 29000
+}
+
+# Integración para analyze_preferences_lambda
+resource "aws_apigatewayv2_integration" "analyze_preferences_lambda_integration" {
+  api_id             = aws_apigatewayv2_api.reyGasExpress_api.id
+  integration_type   = "AWS_PROXY"
+  integration_method = "POST"
+  integration_uri    = aws_lambda_function.analyze_preferences_lambda.invoke_arn
+  timeout_milliseconds = 29000
+}
+
+# Integración para generate_report_lambda
+resource "aws_apigatewayv2_integration" "generate_report_lambda_integration" {
+  api_id             = aws_apigatewayv2_api.reyGasExpress_api.id
+  integration_type   = "AWS_PROXY"
+  integration_method = "POST"
+  integration_uri    = aws_lambda_function.generate_report_lambda.invoke_arn
+  timeout_milliseconds = 29000
+}
+
+# Integración para send_email_report_lambda
+resource "aws_apigatewayv2_integration" "send_email_report_lambda_integration" {
+  api_id             = aws_apigatewayv2_api.reyGasExpress_api.id
+  integration_type   = "AWS_PROXY"
+  integration_method = "POST"
+  integration_uri    = aws_lambda_function.send_email_report_lambda.invoke_arn
+  timeout_milliseconds = 29000
+}
+
+# Configuración de rutas para cada Lambda
 resource "aws_apigatewayv2_route" "register_order_route" {
   api_id    = aws_apigatewayv2_api.reyGasExpress_api.id
   route_key = "POST /orders"
@@ -29,12 +63,82 @@ resource "aws_apigatewayv2_route" "register_order_route" {
   authorization_type = "AWS_IAM"
 }
 
+resource "aws_apigatewayv2_route" "process_order_route" {
+  api_id    = aws_apigatewayv2_api.reyGasExpress_api.id
+  route_key = "POST /process-orders"
+  target    = "integrations/${aws_apigatewayv2_integration.process_order_lambda_integration.id}"
+  authorization_type = "AWS_IAM"
+}
+
+resource "aws_apigatewayv2_route" "analyze_preferences_route" {
+  api_id    = aws_apigatewayv2_api.reyGasExpress_api.id
+  route_key = "POST /analyze-preferences"
+  target    = "integrations/${aws_apigatewayv2_integration.analyze_preferences_lambda_integration.id}"
+  authorization_type = "AWS_IAM"
+}
+
+resource "aws_apigatewayv2_route" "generate_report_route" {
+  api_id    = aws_apigatewayv2_api.reyGasExpress_api.id
+  route_key = "POST /generate-report"
+  target    = "integrations/${aws_apigatewayv2_integration.generate_report_lambda_integration.id}"
+  authorization_type = "AWS_IAM"
+}
+
+resource "aws_apigatewayv2_route" "send_email_report_route" {
+  api_id    = aws_apigatewayv2_api.reyGasExpress_api.id
+  route_key = "POST /send-email-report"
+  target    = "integrations/${aws_apigatewayv2_integration.send_email_report_lambda_integration.id}"
+  authorization_type = "AWS_IAM"
+}
+
+# Configuración de balanceo de carga 70-30 entre dos stages
+resource "aws_apigatewayv2_stage" "primary_stage" {
+  api_id      = aws_apigatewayv2_api.reyGasExpress_api.id
+  name        = "v1"
+  deployment_id = aws_apigatewayv2_deployment.api_deployment.id
+  auto_deploy = true
+  
+  default_route_settings {
+    throttling_burst_limit = 500
+    throttling_rate_limit = 1000
+  }
+  
+  tags = {
+    Environment = var.environment
+    Application = "reyGasExpress"
+    TrafficWeight = "70"
+  }
+}
+
+resource "aws_apigatewayv2_stage" "secondary_stage" {
+  api_id      = aws_apigatewayv2_api.reyGasExpress_api.id
+  name        = "v2"
+  deployment_id = aws_apigatewayv2_deployment.api_deployment.id
+  auto_deploy = true
+  
+  default_route_settings {
+    throttling_burst_limit = 500
+    throttling_rate_limit = 1000
+  }
+  
+  tags = {
+    Environment = var.environment
+    Application = "reyGasExpress"
+    TrafficWeight = "30"
+  }
+}
+
+
 # Crea un despligue de la API
 resource "aws_apigatewayv2_deployment" "api_deployment" {
   api_id = aws_apigatewayv2_api.reyGasExpress_api.id
   triggers = {
     redeployment = sha1(jsonencode([
       aws_apigatewayv2_route.register_order_route.id,
+      aws_apigatewayv2_route.process_order_route.id,
+      aws_apigatewayv2_route.analyze_preferences_route.id,
+      aws_apigatewayv2_route.generate_report_route.id,
+      aws_apigatewayv2_route.send_email_report_route.id
     ]))
   }
 
@@ -82,44 +186,67 @@ resource "aws_lambda_permission" "allow_apigateway_invoke_register_order_lambda"
   source_arn = "${aws_apigatewayv2_api.reyGasExpress_api.execution_arn}/*/*"
 }
 
+resource "aws_lambda_permission" "allow_apigateway_invoke_process_order_lambda" {
+  statement_id  = "AllowAPIGatewayInvokeProcessOrderLambda"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.process_order_lambda.function_name
+  principal     = "apigateway.amazonaws.com"
+  source_arn = "${aws_apigatewayv2_api.reyGasExpress_api.execution_arn}/*/*"
+}
+
+resource "aws_lambda_permission" "allow_apigateway_invoke_analyze_preferences_lambda" {
+  statement_id  = "AllowAPIGatewayInvokeAnalyzePreferencesLambda"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.analyze_preferences_lambda.function_name
+  principal     = "apigateway.amazonaws.com"
+  source_arn = "${aws_apigatewayv2_api.reyGasExpress_api.execution_arn}/*/*"
+}
+
+resource "aws_lambda_permission" "allow_apigateway_invoke_generate_report_lambda" {
+  statement_id  = "AllowAPIGatewayInvokeGenerateReportLambda"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.generate_report_lambda.function_name
+  principal     = "apigateway.amazonaws.com"
+  source_arn = "${aws_apigatewayv2_api.reyGasExpress_api.execution_arn}/*/*"
+}
+
+resource "aws_lambda_permission" "allow_apigateway_invoke_send_email_report_lambda" {
+  statement_id  = "AllowAPIGatewayInvokeSendEmailReportLambda"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.send_email_report_lambda.function_name
+  principal     = "apigateway.amazonaws.com"
+  source_arn = "${aws_apigatewayv2_api.reyGasExpress_api.execution_arn}/*/*"
+}
+
 resource "aws_kms_key" "cloudwatch_logs_encryption" {
   description             = "KMS key for encrypting CloudWatch logs"
   deletion_window_in_days = 10
   enable_key_rotation     = true
 
   policy = jsonencode({
-    Version = "2012-10-17"
-    Id      = "key-policy"
+    Version = "2012-10-17",
+    Id      = "key-policy",
     Statement = [
       {
-        Effect    = "Allow"
+        Effect    = "Allow",
         Principal = {
-          AWS = "arn:aws:iam::aws:policy/CloudWatchLogsFullAccess"
-        }
-        Action    = "kms:Encrypt"
+          AWS = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"
+        },
+        Action    = "kms:*",
         Resource  = "*"
       },
       {
-        Effect    = "Allow"
-        Principal = "*"
+        Effect    = "Allow",
+        Principal = {
+          Service = "logs.${var.aws_region}.amazonaws.com"
+        },
         Action    = [
-          "kms:Decrypt",
-          "kms:GenerateDataKey",
-          "kms:DescribeKey"
-        ]
-        Resource  = "*"
-        Condition = {
-          StringEquals = {
-            "aws:RequestTag/CloudWatch" = "true"
-          }
-        }
-      },
-      {
-        Effect    = "Allow"
-        Principal = {
-          AWS = "arn:aws:iam::963527047110:root"
-        }
-        Action    = "kms:*"
+          "kms:Encrypt*",
+          "kms:Decrypt*",
+          "kms:ReEncrypt*",
+          "kms:GenerateDataKey*",
+          "kms:Describe*"
+        ],
         Resource  = "*"
       }
     ]

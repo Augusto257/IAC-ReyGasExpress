@@ -24,7 +24,6 @@ resource "aws_iam_role" "lambda_execution_role" {
 }
 
 # Política consolidada para todos los permisos que las funciones Lambda necesitan
-# Esta política incluye permisos para CloudWatch Logs, SQS, DynamoDB, EventBridge, S3, y SNS/SES.
 resource "aws_iam_policy" "lambda_all_permissions_policy" {
   name        = "reyGasExpress-lambda-all-permissions-policy-${var.environment}"
   description = "Política consolidada para todos los permisos que las funciones Lambda de reyGasExpress necesitan."
@@ -32,7 +31,7 @@ resource "aws_iam_policy" "lambda_all_permissions_policy" {
   policy = jsonencode({
     Version = "2012-10-17",
     Statement = [
-      # Permisos para CloudWatch Logs (Esenciales para la ejecución de Lambda)
+      # Permisos para CloudWatch Logs
       {
         Action = [
           "logs:CreateLogGroup",
@@ -42,7 +41,16 @@ resource "aws_iam_policy" "lambda_all_permissions_policy" {
         Effect   = "Allow",
         Resource = "arn:aws:logs:${var.aws_region}:${data.aws_caller_identity.current.account_id}:log-group:/aws/lambda/*:*"
       },
-      # Permisos para SQS: Enviar mensajes (registerOrder Lambda)
+      {
+      Action = [
+        "cloudwatch:PutMetricData",
+        "cloudwatch:GetMetricStatistics",
+        "cloudwatch:ListMetrics"
+      ],
+      Effect   = "Allow",
+      Resource = "*"
+      },
+      # Permisos para SQS: Enviar mensajes
       {
         Action = [
           "sqs:SendMessage",
@@ -52,17 +60,22 @@ resource "aws_iam_policy" "lambda_all_permissions_policy" {
         Effect   = "Allow",
         Resource = aws_sqs_queue.reyGasExpress_order_queue.arn
       },
-      # Permisos para SQS: Recibir y eliminar mensajes (processOrder Lambda)
+      # Permisos para SQS: Recibir y eliminar mensajes
       {
-        Action = [
+          Action = [
+          "sqs:SendMessage",
           "sqs:ReceiveMessage",
           "sqs:DeleteMessage",
-          "sqs:GetQueueAttributes"
+          "sqs:GetQueueAttributes",
+          "sqs:GetQueueUrl"
         ],
         Effect   = "Allow",
-        Resource = aws_sqs_queue.reyGasExpress_order_queue.arn
+        Resource = [
+          aws_sqs_queue.reyGasExpress_order_queue.arn,
+          aws_sqs_queue.reyGasExpress_dlq.arn
+        ]
       },
-      # Permisos para DynamoDB: Escribir elementos (processOrder Lambda)
+      # Permisos para DynamoDB: Escribir elementos
       {
         Action = [
           "dynamodb:PutItem",
@@ -72,7 +85,7 @@ resource "aws_iam_policy" "lambda_all_permissions_policy" {
         Effect   = "Allow",
         Resource = aws_dynamodb_table.reyGasExpress_orders_table.arn
       },
-      # Permisos para DynamoDB: Leer elementos (analyzePreferences, generateReport Lambdas)
+      # Permisos para DynamoDB: Leer elementos 
       {
         Action = [
           "dynamodb:GetItem",
@@ -82,52 +95,52 @@ resource "aws_iam_policy" "lambda_all_permissions_policy" {
         Effect   = "Allow",
         Resource = [
           aws_dynamodb_table.reyGasExpress_orders_table.arn,
-          "${aws_dynamodb_table.reyGasExpress_orders_table.arn}/index/*" # Para acceder a GSIs
+          "${aws_dynamodb_table.reyGasExpress_orders_table.arn}/index/*"
         ]
       },
-      # Permisos para EventBridge: Enviar eventos (processOrder Lambda)
+      # Permisos para EventBridge: Enviar eventos
       {
         Action   = "events:PutEvents",
         Effect   = "Allow",
         Resource = "arn:aws:events:${var.aws_region}:${data.aws_caller_identity.current.account_id}:event-bus/${var.event_bus_name}-${var.environment}"
       },
-      # Permisos para S3: Escribir objetos en el bucket de reportes (generateReport Lambda)
+      # Permisos para S3: Escribir objetos en el bucket de reportes
       {
         Action   = ["s3:PutObject"],
         Effect   = "Allow",
         Resource = "${aws_s3_bucket.reyGasExpress_reports_bucket.arn}/*"
       },
-      # Permisos para S3: Leer objetos del bucket de análisis (analyzePreferences Lambda)
+      # Permisos para S3: Leer objetos del bucket de análisis
       {
         Action   = ["s3:GetObject"],
         Effect   = "Allow",
         Resource = "${aws_s3_bucket.reyGasExpress_analysis_bucket.arn}/*"
       },
-      # Permisos para S3: Escribir objetos en el bucket de análisis (analyzePreferences Lambda)
+      # Permisos para S3: Escribir objetos en el bucket de análisis
       {
         Action   = ["s3:PutObject"],
         Effect   = "Allow",
         Resource = "${aws_s3_bucket.reyGasExpress_analysis_bucket.arn}/*"
       },
-      # Permisos para S3: Leer objetos del bucket de reportes (sendEmailReport Lambda)
+      # Permisos para S3: Leer objetos del bucket de reportes
       {
         Action   = ["s3:GetObject"],
         Effect   = "Allow",
         Resource = "${aws_s3_bucket.reyGasExpress_reports_bucket.arn}/*"
       },
-      # Permisos para SNS: Publicar mensajes en el tópico de reportes (analyzePreferences Lambda)
+      # Permisos para SNS: Publicar mensajes en el tópico de reportes
       {
         Action   = "sns:Publish",
         Effect   = "Allow",
         Resource = aws_sns_topic.reyGasExpress_reports_topic.arn
       },
-      # Permisos para SNS: Publicar mensajes en el tópico de emails (generateReport Lambda)
+      # Permisos para SNS: Publicar mensajes en el tópico de emails
       {
         Action   = "sns:Publish",
         Effect   = "Allow",
         Resource = aws_sns_topic.reyGasExpress_email_topic.arn
       },
-      # Permisos para SES: Enviar correos electrónicos (sendEmailReport Lambda)
+      # Permisos para SES: Enviar correos electrónicos
       {
         Action   = [
           "ses:SendEmail",
@@ -135,7 +148,17 @@ resource "aws_iam_policy" "lambda_all_permissions_policy" {
           "ses:SendTemplatedEmail"
         ],
         Effect   = "Allow",
-        Resource = "*" # Permite enviar desde cualquier identidad verificada
+        Resource = "*"
+      },
+
+      # Permisos adicionales específicos para DLQ
+      {
+        Action = [
+          "sqs:SendMessage",
+          "sqs:GetQueueAttributes"
+        ],
+        Effect   = "Allow",
+        Resource = aws_sqs_queue.reyGasExpress_dlq.arn
       }
     ]
   })
@@ -151,4 +174,10 @@ resource "aws_iam_policy" "lambda_all_permissions_policy" {
 resource "aws_iam_role_policy_attachment" "lambda_all_permissions_attachment" {
   role        = aws_iam_role.lambda_execution_role.name
   policy_arn  = aws_iam_policy.lambda_all_permissions_policy.arn
+}
+
+# En tu archivo iam.tf, asegúrate que el rol tenga estas políticas:
+resource "aws_iam_role_policy_attachment" "lambda_vpc_access" {
+  role       = aws_iam_role.lambda_execution_role.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole"
 }

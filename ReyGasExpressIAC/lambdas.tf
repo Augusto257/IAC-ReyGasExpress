@@ -8,11 +8,8 @@ resource "aws_lambda_function" "register_order_lambda" {
   filename      = "${var.lambda_code_path}/registerOrder.zip"
   source_code_hash = filebase64sha256("${var.lambda_code_path}/registerOrder.zip")
 
-  timeout       = 30
-  memory_size   = 128 
-
-  code_signing_config_arn = aws_lambda_code_signing_config.lambda_code_signing_config.arn
-  reserved_concurrent_executions = 10
+  timeout       = 10
+  memory_size   = 512 
 
   environment {
     variables = {
@@ -24,11 +21,6 @@ resource "aws_lambda_function" "register_order_lambda" {
     mode = "Active"
   }
 
-  vpc_config {
-    subnet_ids         = var.lambda_subnet_ids         
-    security_group_ids = var.lambda_security_group_ids 
-  }
-
   dead_letter_config {
     target_arn = aws_sqs_queue.reyGasExpress_dlq.arn
   }
@@ -38,7 +30,11 @@ resource "aws_lambda_function" "register_order_lambda" {
     Application = "reyGasExpress"
     ManagedBy   = "Terraform"
   }
+
+  publish = true
 }
+
+
 
 # Crea la función Lambda para "Procesar y almacenar pedidos"
 resource "aws_lambda_function" "process_order_lambda" {
@@ -47,17 +43,12 @@ resource "aws_lambda_function" "process_order_lambda" {
   runtime       = "nodejs18.x"
   role          = aws_iam_role.lambda_execution_role.arn
 
-  # Ruta al archivo ZIP con tu código para processOrder
   filename      = "${var.lambda_code_path}/processOrder.zip"
   source_code_hash = filebase64sha256("${var.lambda_code_path}/processOrder.zip")
 
   timeout       = 60
   memory_size   = 256
 
-  reserved_concurrent_executions = 10
-  code_signing_config_arn = aws_lambda_code_signing_config.lambda_code_signing_config.arn
-
-  # Variables de entorno para la Lambda
   environment {
     variables = {
       ORDERS_TABLE_NAME = aws_dynamodb_table.reyGasExpress_orders_table.name
@@ -69,11 +60,6 @@ resource "aws_lambda_function" "process_order_lambda" {
     mode = "Active"
   }
 
-  vpc_config {
-    subnet_ids         = var.lambda_subnet_ids         
-    security_group_ids = var.lambda_security_group_ids 
-  }
-  
   dead_letter_config {
     target_arn = aws_sqs_queue.reyGasExpress_dlq.arn
   }
@@ -106,9 +92,6 @@ resource "aws_lambda_function" "analyze_preferences_lambda" {
   timeout       = 90 
   memory_size   = 256
 
-  reserved_concurrent_executions = 10
-  code_signing_config_arn = aws_lambda_code_signing_config.lambda_code_signing_config.arn
-
   environment {
     variables = {
       ORDERS_TABLE_NAME    = aws_dynamodb_table.reyGasExpress_orders_table.name
@@ -119,11 +102,6 @@ resource "aws_lambda_function" "analyze_preferences_lambda" {
 
   tracing_config {
     mode = "Active"
-  }
-
-  vpc_config {
-    subnet_ids         = var.lambda_subnet_ids         
-    security_group_ids = var.lambda_security_group_ids 
   }
 
   dead_letter_config {
@@ -184,9 +162,6 @@ resource "aws_lambda_function" "generate_report_lambda" {
   timeout       = 90
   memory_size   = 256
 
-  reserved_concurrent_executions = 10
-  code_signing_config_arn = aws_lambda_code_signing_config.lambda_code_signing_config.arn
-
   environment {
     variables = {
       ANALYSIS_BUCKET_NAME = aws_s3_bucket.reyGasExpress_analysis_bucket.id
@@ -197,11 +172,6 @@ resource "aws_lambda_function" "generate_report_lambda" {
 
   tracing_config {
     mode = "Active"
-  }
-
-  vpc_config {
-    subnet_ids         = var.lambda_subnet_ids         
-    security_group_ids = var.lambda_security_group_ids 
   }
 
   dead_letter_config {
@@ -233,26 +203,18 @@ resource "aws_lambda_function" "send_email_report_lambda" {
   source_code_hash = filebase64sha256("${var.lambda_code_path}/sendEmailReport.zip")
 
   timeout     = 60
-  memory_size = 192 # Un poco más de memoria si el reporte es grande
-
-  reserved_concurrent_executions = 10
-  code_signing_config_arn = aws_lambda_code_signing_config.lambda_code_signing_config.arn
+  memory_size = 192
 
   environment {
     variables = {
       REPORTS_BUCKET_NAME = aws_s3_bucket.reyGasExpress_reports_bucket.id
       FROM_EMAIL          = var.from_email_address
-      TO_EMAIL            = var.to_email_address # Valor por defecto, puede ser sobrescrito por el payload SNS
+      TO_EMAIL            = var.to_email_address
     }
   }
 
   tracing_config {
     mode = "Active"
-  }
-
-  vpc_config {
-    subnet_ids         = var.lambda_subnet_ids         
-    security_group_ids = var.lambda_security_group_ids 
   }
 
   dead_letter_config {
@@ -289,23 +251,4 @@ resource "aws_lambda_permission" "allow_sns_invoke_send_email_report_lambda" {
   function_name = aws_lambda_function.send_email_report_lambda.function_name
   principal     = "sns.amazonaws.com"
   source_arn    = aws_sns_topic.reyGasExpress_email_topic.arn
-}
-
-resource "aws_signer_signing_profile" "lambda_signing_profile" {
-  name     = "reyGasExpressSigningProfile"
-  platform_id = "AWSLambda-SHA384-ECDSA" # Plataforma compatible con Lambda
-}
-
-resource "aws_lambda_code_signing_config" "lambda_code_signing_config" {
-  allowed_publishers {
-    signing_profile_version_arns = [
-      aws_signer_signing_profile.lambda_signing_profile.version_arn
-    ]
-  }
-
-  policies {
-    untrusted_artifact_on_deployment = "Enforce"
-  }
-
-  description = "Code signing config for reyGasExpress Lambda functions"
 }

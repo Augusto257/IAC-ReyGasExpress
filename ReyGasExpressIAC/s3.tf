@@ -1,4 +1,4 @@
-# Crea el contenedor en s3 donde se guardaran los archivos de nuestro frontend
+# Bucket principal para el frontend (ya está correctamente configurado)
 resource "aws_s3_bucket" "reygas_frontend_bucket" {
   bucket = var.s3_bucket_name
 
@@ -9,7 +9,6 @@ resource "aws_s3_bucket" "reygas_frontend_bucket" {
   }
 }
 
-# Permite restaurar versiones previas de nuestros archivos en caso de errores o eliminaciones
 resource "aws_s3_bucket_versioning" "reygas_frontend_versioning" {
   bucket = aws_s3_bucket.reygas_frontend_bucket.id
   versioning_configuration {
@@ -17,7 +16,6 @@ resource "aws_s3_bucket_versioning" "reygas_frontend_versioning" {
   }
 }
 
-# Asegura que todos los datos almacenados en nuestro bucket s3 esten encriptados en reposo
 resource "aws_s3_bucket_server_side_encryption_configuration" "reygas_frontend_encryption" {
   bucket = aws_s3_bucket.reygas_frontend_bucket.id
 
@@ -28,18 +26,15 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "reygas_frontend_e
   }
 }
 
-# Garantiza que nuestro bucket s3 no sea accesible públicamente desde internet
 resource "aws_s3_bucket_public_access_block" "reygas_frontend_pab" {
   bucket = aws_s3_bucket.reygas_frontend_bucket.id
-
   block_public_acls       = true
   block_public_policy     = true
   ignore_public_acls      = true
   restrict_public_buckets = true
 }
 
-
-# Bucket S3 para almacenar los datos de análisis/intermedios de preferencias
+# Bucket para análisis de preferencias (ya está correctamente configurado)
 resource "aws_s3_bucket" "reyGasExpress_analysis_bucket" {
   bucket = "reygas-express-analysis-${var.environment}"
 
@@ -50,17 +45,23 @@ resource "aws_s3_bucket" "reyGasExpress_analysis_bucket" {
   }
 }
 
-# Configuración para bloquear el acceso público al bucket de análisis
 resource "aws_s3_bucket_public_access_block" "analysis_bucket_public_access_block" {
   bucket = aws_s3_bucket.reyGasExpress_analysis_bucket.id
-
   block_public_acls       = true
   block_public_policy     = true
   ignore_public_acls      = true
   restrict_public_buckets = true
 }
 
-# Bucket S3 para almacenar los reportes de preferencias generados
+resource "aws_s3_bucket_server_side_encryption_configuration" "analysis_bucket_encryption" {
+  bucket = aws_s3_bucket.reyGasExpress_analysis_bucket.id
+  rule {
+    apply_server_side_encryption_by_default {
+      sse_algorithm = "AES256"
+    }
+  }
+}
+
 resource "aws_s3_bucket" "reyGasExpress_reports_bucket" {
   bucket = var.reports_bucket_name
 
@@ -71,10 +72,51 @@ resource "aws_s3_bucket" "reyGasExpress_reports_bucket" {
   }
 }
 
-# Bloqueo de acceso público para el bucket de reportes
 resource "aws_s3_bucket_public_access_block" "reports_bucket_public_access_block" {
   bucket = aws_s3_bucket.reyGasExpress_reports_bucket.id
+  block_public_acls       = true
+  block_public_policy     = true
+  ignore_public_acls      = true
+  restrict_public_buckets = true
+}
 
+resource "aws_s3_bucket_server_side_encryption_configuration" "reports_bucket_encryption" {
+  bucket = aws_s3_bucket.reyGasExpress_reports_bucket.id
+  rule {
+    apply_server_side_encryption_by_default {
+      sse_algorithm = "AES256"
+    }
+  }
+}
+
+resource "aws_s3_bucket" "reygas_frontend_failover_bucket" {
+  bucket = "${var.s3_bucket_name}-failover-${var.environment}"
+
+  tags = {
+    Environment = var.environment
+    Application = "reyGasExpress"
+    ManagedBy   = "Terraform"
+  }
+}
+
+resource "aws_s3_bucket_versioning" "reygas_failover_versioning" {
+  bucket = aws_s3_bucket.reygas_frontend_failover_bucket.id
+  versioning_configuration {
+    status = "Enabled"
+  }
+}
+
+resource "aws_s3_bucket_server_side_encryption_configuration" "reygas_failover_encryption" {
+  bucket = aws_s3_bucket.reygas_frontend_failover_bucket.id
+  rule {
+    apply_server_side_encryption_by_default {
+      sse_algorithm = "AES256"
+    }
+  }
+}
+
+resource "aws_s3_bucket_public_access_block" "reygas_frontend_failover_pab" {
+  bucket = aws_s3_bucket.reygas_frontend_failover_bucket.id
   block_public_acls       = true
   block_public_policy     = true
   ignore_public_acls      = true

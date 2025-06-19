@@ -1,4 +1,3 @@
-# Configura nuestro firewall de aplicaciones web que protege de ataques web
 resource "aws_wafv2_web_acl" "reyGasExpress_waf" {
   provider = aws.us_east_1
   name  = var.waf_name
@@ -8,7 +7,7 @@ resource "aws_wafv2_web_acl" "reyGasExpress_waf" {
     allow {}
   }
 
-  # Regla 1: Restricción geográfica - Solo Perú
+  # Regla 1: Restricción geográfica
   rule {
     name     = "GeoRestrictionRule"
     priority = 1
@@ -80,28 +79,28 @@ resource "aws_wafv2_web_acl" "reyGasExpress_waf" {
     }
   }
 
-  #Regla 4 log4shellProtection
+  # Regla 4: Protección contra Log4Shell
   rule {
-  name     = "AWSManagedRulesKnownBadInputsRule"
-  priority = 10
+    name     = "AWSManagedRulesKnownBadInputsRule"
+    priority = 15  # Cambiado de 10 a 15
 
-  override_action {
-    none {}
-  }
+    override_action {
+      none {}
+    }
 
-  statement {
-    managed_rule_group_statement {
-      name        = "AWSManagedRulesKnownBadInputsRuleSet"
-      vendor_name = "AWS"
+    statement {
+      managed_rule_group_statement {
+        name        = "AWSManagedRulesKnownBadInputsRuleSet"
+        vendor_name = "AWS"
+      }
+    }
+
+    visibility_config {
+      sampled_requests_enabled = true
+      cloudwatch_metrics_enabled = true
+      metric_name = "log4shellProtection"
     }
   }
-
-  visibility_config {
-    sampled_requests_enabled = true
-    cloudwatch_metrics_enabled = true
-    metric_name = "log4shellProtection"
-  }
-}
 
   visibility_config {
     cloudwatch_metrics_enabled = true
