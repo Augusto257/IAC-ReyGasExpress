@@ -8,25 +8,22 @@ exports.handler = async (event) => {
     console.log('Evento EventBridge recibido:', JSON.stringify(event, null, 2));
     
     try {
-        // Procesar evento de EventBridge
         for (const record of event.Records || [event]) {
             const eventDetail = record.detail || event.detail;
             const { orderId, customerId, preferences, items } = eventDetail;
 
-            // Obtener datos históricos del cliente desde DynamoDB
             const queryParams = {
                 TableName: process.env.ORDERS_TABLE_NAME,
-                IndexName: 'customer-index', // Asume que tienes un GSI por customerId
+                IndexName: 'customer-index',
                 KeyConditionExpression: 'customerId = :customerId',
                 ExpressionAttributeValues: {
                     ':customerId': customerId
                 },
-                Limit: 50 // Últimas 50 órdenes para análisis
+                Limit: 50
             };
 
             const historicalData = await dynamodb.query(queryParams).promise();
             
-            // Análisis de preferencias
             const analysis = {
                 customerId,
                 analysisDate: new Date().toISOString(),
@@ -36,7 +33,6 @@ exports.handler = async (event) => {
                 trends: identifyTrends(historicalData.Items)
             };
 
-            // Guardar análisis en S3
             const s3Key = `preferences-analysis/${customerId}/${Date.now()}.json`;
             await s3.putObject({
                 Bucket: process.env.ANALYSIS_BUCKET_NAME,
@@ -47,7 +43,6 @@ exports.handler = async (event) => {
 
             console.log('Análisis guardado en S3:', s3Key);
 
-            // Notificar para generar reporte si hay insights significativos
             if (analysis.preferences.significantChanges || analysis.totalOrders % 10 === 0) {
                 await sns.publish({
                     TopicArn: process.env.REPORT_TOPIC_ARN,
@@ -70,7 +65,6 @@ exports.handler = async (event) => {
     }
 };
 
-// Funciones auxiliares para análisis
 function analyzeCustomerPreferences(historicalOrders, currentPreferences) {
     const categoryFrequency = {};
     const priceRanges = [];
@@ -93,7 +87,6 @@ function analyzeCustomerPreferences(historicalOrders, currentPreferences) {
 }
 
 function generateRecommendations(historicalOrders, currentItems) {
-    // Lógica simple de recomendaciones basada en patrones
     return {
         suggestedItems: ['Recomendación basada en historial'],
         crossSellOpportunities: ['Productos complementarios'],
@@ -110,6 +103,5 @@ function identifyTrends(historicalOrders) {
 }
 
 function detectPreferenceChanges(historical, current) {
-    // Detectar cambios significativos en preferencias
-    return Math.random() > 0.8; // Simplificado
+    return Math.random() > 0.8;
 }

@@ -163,13 +163,6 @@ variable "acm_certificate_arn" {
 variable "lambda_subnet_ids" {
   description = "IDs de las subredes donde se desplegarán las Lambdas"
   type        = list(string)
-  default     = []
+  default     = [] 
 }
 
-#variable "lambda_subnet_ids" {
-#  type = list(string)
-#}
-
-#variable "lambda_security_group_ids" {
-#  type = list(string)
-#}

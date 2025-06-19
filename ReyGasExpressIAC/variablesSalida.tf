@@ -87,3 +87,8 @@ output "email_topic_arn" {
   description = "ARN del tópico SNS de email."
   value       = aws_sns_topic.reyGasExpress_email_topic.arn
 }
+
+output "cloudwatch_dashboard_name" {
+  description = "Nombre del dashboard de CloudWatch creado."
+  value       = aws_cloudwatch_dashboard.reygas_express_dashboard.dashboard_name
+}
