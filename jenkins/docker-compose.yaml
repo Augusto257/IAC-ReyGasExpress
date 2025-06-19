@@ -1,0 +1,42 @@
+version: '3.8'
+
+services:
+  jenkins:
+    build:
+      context: .
+    container_name: jenkins-reygasexpress
+    ports: 
+      - "5040:8080"       
+      - "50040:50000"     
+    environment:
+      - CASC_JENKINS_CONFIG=/var/jenkins_home/casc/jenkins.yaml
+    volumes:
+      - jenkins_data:/var/jenkins_home
+      - ./jenkins.yaml:/var/jenkins_home/casc/jenkins.yaml
+    networks:
+      - jenkins-lab
+    depends_on:
+      - docker-agent
+
+  docker-agent:
+    image: docker:28.1.1-dind
+    container_name: docker-agent-reygasexpress
+    privileged: true
+    environment:
+      - DOCKER_TLS_CERTDIR=""
+    command: [
+      "dockerd",
+      "--host=tcp://0.0.0.0:2375",
+      "--host=unix:///var/run/docker.sock"
+    ]
+    ports:
+      - "2375:2375"
+    networks:
+      - jenkins-lab
+
+volumes:
+  jenkins_data:
+
+networks:
+  jenkins-lab:
+    driver: bridge

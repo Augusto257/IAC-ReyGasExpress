@@ -121,7 +121,7 @@ resource "aws_vpc_endpoint" "sqs_endpoint" {
   vpc_endpoint_type = "Interface"
 
   security_group_ids = [aws_security_group.lambda_sg.id]
-  subnet_ids        = [aws_subnet.lambda_subnet_1.id, aws_subnet.lambda_subnet_2.id]
+  subnet_ids         = [aws_subnet.lambda_subnet_1.id, aws_subnet.lambda_subnet_2.id]
 
   private_dns_enabled = true
 
@@ -136,7 +136,7 @@ resource "aws_vpc_endpoint" "cloudwatch_endpoint" {
   vpc_endpoint_type = "Interface"
 
   security_group_ids = [aws_security_group.lambda_sg.id]
-  subnet_ids        = [aws_subnet.lambda_subnet_1.id, aws_subnet.lambda_subnet_2.id]
+  subnet_ids         = [aws_subnet.lambda_subnet_1.id, aws_subnet.lambda_subnet_2.id]
 
   private_dns_enabled = true
 

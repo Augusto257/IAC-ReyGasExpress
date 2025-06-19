@@ -27,7 +27,7 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "reygas_frontend_e
 }
 
 resource "aws_s3_bucket_public_access_block" "reygas_frontend_pab" {
-  bucket = aws_s3_bucket.reygas_frontend_bucket.id
+  bucket                  = aws_s3_bucket.reygas_frontend_bucket.id
   block_public_acls       = true
   block_public_policy     = true
   ignore_public_acls      = true
@@ -46,7 +46,7 @@ resource "aws_s3_bucket" "reyGasExpress_analysis_bucket" {
 }
 
 resource "aws_s3_bucket_public_access_block" "analysis_bucket_public_access_block" {
-  bucket = aws_s3_bucket.reyGasExpress_analysis_bucket.id
+  bucket                  = aws_s3_bucket.reyGasExpress_analysis_bucket.id
   block_public_acls       = true
   block_public_policy     = true
   ignore_public_acls      = true
@@ -73,7 +73,7 @@ resource "aws_s3_bucket" "reyGasExpress_reports_bucket" {
 }
 
 resource "aws_s3_bucket_public_access_block" "reports_bucket_public_access_block" {
-  bucket = aws_s3_bucket.reyGasExpress_reports_bucket.id
+  bucket                  = aws_s3_bucket.reyGasExpress_reports_bucket.id
   block_public_acls       = true
   block_public_policy     = true
   ignore_public_acls      = true
@@ -116,7 +116,7 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "reygas_failover_e
 }
 
 resource "aws_s3_bucket_public_access_block" "reygas_frontend_failover_pab" {
-  bucket = aws_s3_bucket.reygas_frontend_failover_bucket.id
+  bucket                  = aws_s3_bucket.reygas_frontend_failover_bucket.id
   block_public_acls       = true
   block_public_policy     = true
   ignore_public_acls      = true

@@ -1,9 +1,9 @@
 # Tabla DynamoDB para almacenar los pedidos procesados
 resource "aws_dynamodb_table" "reyGasExpress_orders_table" {
-  name             = "reyGasExpress-orders-table-${var.environment}"
-  billing_mode     = "PAY_PER_REQUEST"
+  name         = "reyGasExpress-orders-table-${var.environment}"
+  billing_mode = "PAY_PER_REQUEST"
 
-  hash_key         = "orderId"
+  hash_key = "orderId"
 
   attribute {
     name = "orderId"
@@ -16,9 +16,9 @@ resource "aws_dynamodb_table" "reyGasExpress_orders_table" {
   }
 
   global_secondary_index {
-    name               = "customer-index"
-    hash_key           = "customerId"
-    projection_type    = "ALL"
+    name            = "customer-index"
+    hash_key        = "customerId"
+    projection_type = "ALL"
   }
 
   ttl {
@@ -26,7 +26,7 @@ resource "aws_dynamodb_table" "reyGasExpress_orders_table" {
     enabled        = true
   }
 
-  point_in_time_recovery {  
+  point_in_time_recovery {
     enabled = true
   }
 

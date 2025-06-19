@@ -42,13 +42,13 @@ resource "aws_iam_policy" "lambda_all_permissions_policy" {
         Resource = "arn:aws:logs:${var.aws_region}:${data.aws_caller_identity.current.account_id}:log-group:/aws/lambda/*:*"
       },
       {
-      Action = [
-        "cloudwatch:PutMetricData",
-        "cloudwatch:GetMetricStatistics",
-        "cloudwatch:ListMetrics"
-      ],
-      Effect   = "Allow",
-      Resource = "*"
+        Action = [
+          "cloudwatch:PutMetricData",
+          "cloudwatch:GetMetricStatistics",
+          "cloudwatch:ListMetrics"
+        ],
+        Effect   = "Allow",
+        Resource = "*"
       },
       # Permisos para SQS: Enviar mensajes
       {
@@ -62,14 +62,14 @@ resource "aws_iam_policy" "lambda_all_permissions_policy" {
       },
       # Permisos para SQS: Recibir y eliminar mensajes
       {
-          Action = [
+        Action = [
           "sqs:SendMessage",
           "sqs:ReceiveMessage",
           "sqs:DeleteMessage",
           "sqs:GetQueueAttributes",
           "sqs:GetQueueUrl"
         ],
-        Effect   = "Allow",
+        Effect = "Allow",
         Resource = [
           aws_sqs_queue.reyGasExpress_order_queue.arn,
           aws_sqs_queue.reyGasExpress_dlq.arn
@@ -92,7 +92,7 @@ resource "aws_iam_policy" "lambda_all_permissions_policy" {
           "dynamodb:Query",
           "dynamodb:Scan"
         ],
-        Effect   = "Allow",
+        Effect = "Allow",
         Resource = [
           aws_dynamodb_table.reyGasExpress_orders_table.arn,
           "${aws_dynamodb_table.reyGasExpress_orders_table.arn}/index/*"
@@ -142,7 +142,7 @@ resource "aws_iam_policy" "lambda_all_permissions_policy" {
       },
       # Permisos para SES: Enviar correos electrónicos
       {
-        Action   = [
+        Action = [
           "ses:SendEmail",
           "ses:SendRawEmail",
           "ses:SendTemplatedEmail"
@@ -172,8 +172,8 @@ resource "aws_iam_policy" "lambda_all_permissions_policy" {
 
 # Adjunta la política consolidada de permisos al rol de ejecución de Lambda
 resource "aws_iam_role_policy_attachment" "lambda_all_permissions_attachment" {
-  role        = aws_iam_role.lambda_execution_role.name
-  policy_arn  = aws_iam_policy.lambda_all_permissions_policy.arn
+  role       = aws_iam_role.lambda_execution_role.name
+  policy_arn = aws_iam_policy.lambda_all_permissions_policy.arn
 }
 
 # En tu archivo iam.tf, asegúrate que el rol tenga estas políticas:
