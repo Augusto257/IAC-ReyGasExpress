@@ -5,11 +5,11 @@ resource "aws_lambda_function" "register_order_lambda" {
   runtime       = "nodejs18.x"
   role          = aws_iam_role.lambda_execution_role.arn
 
-  filename      = "${var.lambda_code_path}/registerOrder.zip"
+  filename         = "${var.lambda_code_path}/registerOrder.zip"
   source_code_hash = filebase64sha256("${var.lambda_code_path}/registerOrder.zip")
 
-  timeout       = 10
-  memory_size   = 512 
+  timeout     = 10
+  memory_size = 512
 
   environment {
     variables = {
@@ -43,11 +43,11 @@ resource "aws_lambda_function" "process_order_lambda" {
   runtime       = "nodejs18.x"
   role          = aws_iam_role.lambda_execution_role.arn
 
-  filename      = "${var.lambda_code_path}/processOrder.zip"
+  filename         = "${var.lambda_code_path}/processOrder.zip"
   source_code_hash = filebase64sha256("${var.lambda_code_path}/processOrder.zip")
 
-  timeout       = 60
-  memory_size   = 256
+  timeout     = 60
+  memory_size = 256
 
   environment {
     variables = {
@@ -86,11 +86,11 @@ resource "aws_lambda_function" "analyze_preferences_lambda" {
   runtime       = "nodejs18.x"
   role          = aws_iam_role.lambda_execution_role.arn
 
-  filename      = "${var.lambda_code_path}/analyzePreferences.zip"
+  filename         = "${var.lambda_code_path}/analyzePreferences.zip"
   source_code_hash = filebase64sha256("${var.lambda_code_path}/analyzePreferences.zip")
 
-  timeout       = 90 
-  memory_size   = 256
+  timeout     = 90
+  memory_size = 256
 
   environment {
     variables = {
@@ -117,12 +117,12 @@ resource "aws_lambda_function" "analyze_preferences_lambda" {
 
 # EventBridge Rule para invocar la Lambda analyzePreferences cuando se procesa un pedido
 resource "aws_cloudwatch_event_rule" "analyze_preferences_rule" {
-  name          = "reyGasExpress-analyzePreferences-rule-${var.environment}"
-  description   = "Captura eventos de pedidos procesados para análisis de preferencias."
+  name           = "reyGasExpress-analyzePreferences-rule-${var.environment}"
+  description    = "Captura eventos de pedidos procesados para análisis de preferencias."
   event_bus_name = aws_cloudwatch_event_bus.reyGasExpress_event_bus.name
 
   event_pattern = jsonencode({
-    source     = ["orders.system"],
+    source        = ["orders.system"],
     "detail-type" = ["Order Processed"]
   })
 
@@ -144,8 +144,8 @@ resource "aws_lambda_permission" "allow_eventbridge_invoke_analyze_preferences_l
 
 # Target para la EventBridge Rule: la Lambda analyzePreferences
 resource "aws_cloudwatch_event_target" "analyze_preferences_lambda_target" {
-  rule      = aws_cloudwatch_event_rule.analyze_preferences_rule.name
-  arn       = aws_lambda_function.analyze_preferences_lambda.arn
+  rule           = aws_cloudwatch_event_rule.analyze_preferences_rule.name
+  arn            = aws_lambda_function.analyze_preferences_lambda.arn
   event_bus_name = aws_cloudwatch_event_bus.reyGasExpress_event_bus.name # Nuestro EventBus personalizado
 }
 
@@ -156,11 +156,11 @@ resource "aws_lambda_function" "generate_report_lambda" {
   runtime       = "nodejs18.x"
   role          = aws_iam_role.lambda_execution_role.arn
 
-  filename      = "${var.lambda_code_path}/generateReport.zip"
+  filename         = "${var.lambda_code_path}/generateReport.zip"
   source_code_hash = filebase64sha256("${var.lambda_code_path}/generateReport.zip")
 
-  timeout       = 90
-  memory_size   = 256
+  timeout     = 90
+  memory_size = 256
 
   environment {
     variables = {
@@ -230,7 +230,7 @@ resource "aws_lambda_function" "send_email_report_lambda" {
 
 resource "aws_sqs_queue" "reyGasExpress_dlq" {
   name = "reyGasExpress-registerOrder-dlq-${var.environment}"
-  
+
   tags = {
     Environment = var.environment
     Application = "reyGasExpress"

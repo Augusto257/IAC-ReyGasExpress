@@ -45,7 +45,7 @@ variable "api_gateway_domain" {
 variable "cloudfront_price_class" {
   description = "Clase de precio para CloudFront"
   type        = string
-  default     = "PriceClass_100"  # Solo US, Canada, Europa
+  default     = "PriceClass_100" # Solo US, Canada, Europa
 }
 
 # Variables de entrada para Cognito
@@ -163,7 +163,7 @@ variable "acm_certificate_arn" {
 variable "lambda_subnet_ids" {
   description = "IDs de las subredes donde se desplegarán las Lambdas"
   type        = list(string)
-  default     = [] 
+  default     = []
 }
 
 #variable "lambda_subnet_ids" {

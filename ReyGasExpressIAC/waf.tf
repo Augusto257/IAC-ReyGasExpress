@@ -1,7 +1,7 @@
 resource "aws_wafv2_web_acl" "reyGasExpress_waf" {
   provider = aws.us_east_1
-  name  = var.waf_name
-  scope = "CLOUDFRONT"
+  name     = var.waf_name
+  scope    = "CLOUDFRONT"
 
   default_action {
     allow {}
@@ -82,7 +82,7 @@ resource "aws_wafv2_web_acl" "reyGasExpress_waf" {
   # Regla 4: Protección contra Log4Shell
   rule {
     name     = "AWSManagedRulesKnownBadInputsRule"
-    priority = 15  # Cambiado de 10 a 15
+    priority = 15 # Cambiado de 10 a 15
 
     override_action {
       none {}
@@ -96,9 +96,9 @@ resource "aws_wafv2_web_acl" "reyGasExpress_waf" {
     }
 
     visibility_config {
-      sampled_requests_enabled = true
+      sampled_requests_enabled   = true
       cloudwatch_metrics_enabled = true
-      metric_name = "log4shellProtection"
+      metric_name                = "log4shellProtection"
     }
   }
 
