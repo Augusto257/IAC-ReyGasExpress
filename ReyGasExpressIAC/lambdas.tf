@@ -146,7 +146,7 @@ resource "aws_lambda_permission" "allow_eventbridge_invoke_analyze_preferences_l
 resource "aws_cloudwatch_event_target" "analyze_preferences_lambda_target" {
   rule      = aws_cloudwatch_event_rule.analyze_preferences_rule.name
   arn       = aws_lambda_function.analyze_preferences_lambda.arn
-  event_bus_name = aws_cloudwatch_event_bus.reyGasExpress_event_bus.name # Nuestro EventBus personalizado
+  event_bus_name = aws_cloudwatch_event_bus.reyGasExpress_event_bus.name
 }
 
 # Crea la función Lambda para "Generar Documento de Reporte de preferencias"

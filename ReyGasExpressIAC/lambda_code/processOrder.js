@@ -1,18 +1,24 @@
-const AWS = require('aws-sdk');
-const dynamodb = new AWS.DynamoDB.DocumentClient();
-const eventbridge = new AWS.EventBridge();
+const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
+const { DynamoDBDocumentClient, PutCommand } = require('@aws-sdk/lib-dynamodb');
+const { EventBridgeClient, PutEventsCommand } = require('@aws-sdk/client-eventbridge');
+
+const REGION = process.env.AWS_REGION;
+
+const dynamodbClient = new DynamoDBClient({ region: REGION });
+const ddbDocClient = DynamoDBDocumentClient.from(dynamodbClient);
+
+const eventbridge = new EventBridgeClient({ region: REGION });
 
 exports.handler = async (event) => {
     console.log('Lambda: Procesar y Almacenar Pedidos invocada');
     console.log('Evento SQS recibido:', JSON.stringify(event, null, 2));
-    
+
     try {
         for (const record of event.Records) {
             const orderData = JSON.parse(record.body);
             console.log('Procesando pedido:', orderData.orderId);
 
-            // Guardar en DynamoDB
-            const dynamoParams = {
+            const putCommand = new PutCommand({
                 TableName: process.env.ORDERS_TABLE_NAME,
                 Item: {
                     orderId: orderData.orderId,
@@ -23,15 +29,14 @@ exports.handler = async (event) => {
                     status: 'processed',
                     createdAt: orderData.timestamp,
                     processedAt: new Date().toISOString(),
-                    ttl: Math.floor(Date.now() / 1000) + (365 * 24 * 60 * 60) // 1 año TTL
+                    ttl: Math.floor(Date.now() / 1000) + (365 * 24 * 60 * 60)
                 }
-            };
+            });
 
-            await dynamodb.put(dynamoParams).promise();
+            await ddbDocClient.send(putCommand);
             console.log('Pedido guardado en DynamoDB:', orderData.orderId);
 
-            // Enviar evento a EventBridge para análisis de preferencias
-            const eventParams = {
+            const putEventsCommand = new PutEventsCommand({
                 Entries: [{
                     Source: 'orders.system',
                     DetailType: 'Order Processed',
@@ -43,9 +48,9 @@ exports.handler = async (event) => {
                     }),
                     EventBusName: process.env.EVENT_BUS_NAME || 'default'
                 }]
-            };
+            });
 
-            await eventbridge.putEvents(eventParams).promise();
+            await eventbridge.send(putEventsCommand);
             console.log('Evento enviado a EventBridge para análisis');
         }
 
@@ -53,6 +58,6 @@ exports.handler = async (event) => {
 
     } catch (error) {
         console.error('Error en processOrder:', error);
-        throw error; // Esto hará que SQS reintente el mensaje
+        throw error;
     }
 };

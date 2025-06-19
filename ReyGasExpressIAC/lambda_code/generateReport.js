@@ -11,7 +11,6 @@ exports.handler = async (event) => {
             const snsMessage = JSON.parse(record.Sns.Message);
             const { customerId, s3Location, type } = snsMessage;
 
-            // Descargar datos de análisis desde S3
             const s3Params = {
                 Bucket: process.env.ANALYSIS_BUCKET_NAME,
                 Key: s3Location.replace(`s3://${process.env.ANALYSIS_BUCKET_NAME}/`, '')
@@ -20,10 +19,8 @@ exports.handler = async (event) => {
             const analysisData = await s3.getObject(s3Params).promise();
             const analysis = JSON.parse(analysisData.Body.toString());
 
-            // Generar reporte HTML
             const reportHtml = generateHtmlReport(analysis);
             
-            // Guardar reporte en S3
             const reportKey = `reports/${customerId}/${Date.now()}_preferences_report.html`;
             await s3.putObject({
                 Bucket: process.env.REPORTS_BUCKET_NAME,
@@ -35,7 +32,6 @@ exports.handler = async (event) => {
 
             console.log('Reporte generado y guardado:', reportKey);
 
-            // Notificar para envío por email
             await sns.publish({
                 TopicArn: process.env.EMAIL_TOPIC_ARN,
                 Message: JSON.stringify({

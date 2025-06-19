@@ -11,7 +11,6 @@ exports.handler = async (event) => {
             const snsMessage = JSON.parse(record.Sns.Message);
             const { customerId, reportLocation, reportType, generatedAt } = snsMessage;
 
-            // Obtener el reporte desde S3
             const s3Params = {
                 Bucket: process.env.REPORTS_BUCKET_NAME,
                 Key: reportLocation.replace(`s3://${process.env.REPORTS_BUCKET_NAME}/`, '')
@@ -20,9 +19,8 @@ exports.handler = async (event) => {
             const reportData = await s3.getObject(s3Params).promise();
             const reportHtml = reportData.Body.toString();
 
-            // Configurar parámetros del email
             const emailParams = {
-                Source: process.env.FROM_EMAIL, // Email verificado en SES
+                Source: process.env.FROM_EMAIL,
                 Destination: {
                     ToAddresses: [process.env.TO_EMAIL || `cliente-${customerId}@example.com`]
                 },
@@ -44,7 +42,6 @@ exports.handler = async (event) => {
                 }
             };
 
-            // Enviar email
             const result = await ses.sendEmail(emailParams).promise();
             console.log('Email enviado:', result.MessageId);
         }
@@ -54,7 +51,6 @@ exports.handler = async (event) => {
     } catch (error) {
         console.error('Error en sendEmailReport:', error);
         
-        // Si es error de SES (email no verificado), loguear pero no fallar
         if (error.code === 'MessageRejected' || error.code === 'InvalidParameterValue') {
             console.log('Email no pudo ser enviado - posiblemente email no verificado en SES');
             return { statusCode: 200, message: 'Email handling completed with warnings' };
