@@ -1,0 +1,35 @@
+jenkins:
+  securityRealm:
+    local:
+      allowsSignup: false
+      users:
+        - id: "admin"
+          name: "ReyGasAdmin"
+          password: "admin123"
+
+  authorizationStrategy:
+    loggedInUsersCanDoAnything:
+      allowAnonymousRead: false
+
+  clouds:
+    - docker:
+        name: "Docker Agents"
+        dockerApi:
+          dockerHost:
+            uri: "tcp://docker-agent-reygasexpress:2375"
+        templates:
+          - name: "docker-agent"
+            labelString: "docker"
+            remoteFs: "/home/jenkins/agent"
+            instanceCapStr: "10"
+            connector:
+              attach:
+                user: root
+            dockerTemplateBase:
+              image: "reygasexpress/terraform-agent:1.0"
+              pullCredentialsId: ""
+              privileged: false
+              network: "bridge"
+              tty: true
+              environment:
+                - JENKINS_AGENT_WORKDIR=/home/jenkins/agent
