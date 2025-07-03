@@ -13,7 +13,7 @@ resource "null_resource" "waf_propagation_delay" {
   depends_on = [aws_wafv2_web_acl.reyGasExpress_waf]
 
   provisioner "local-exec" {
-    command = "sleep 60"
+    command = "powershell.exe -Command \"Start-Sleep -Seconds 60\""
   }
   triggers = {
     waf_id = aws_wafv2_web_acl.reyGasExpress_waf.id
