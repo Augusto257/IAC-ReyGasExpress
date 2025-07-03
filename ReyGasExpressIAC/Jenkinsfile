@@ -1,0 +1,63 @@
+pipeline {
+    agent any
+
+    environment {
+        TF_IN_AUTOMATION = 'true'
+    }
+
+    stages {
+
+        stage('Clonar repositorio') {
+            steps {
+                git branch: 'feature/cloudwatch-dashboard', url: 'https://github.com/Augusto257/IAC-ReyGasExpress.git'
+            }
+        }
+
+        stage('Terraform Init') {
+            steps {
+                dir('ReyGasExpressIAC') {
+                    sh 'terraform init'
+                }
+            }
+        }
+
+        stage('Terraform Validate') {
+            steps {
+                dir('ReyGasExpressIAC') {
+                    sh 'terraform validate'
+                }
+            }
+        }
+
+        stage('Terraform Plan') {
+            steps {
+                dir('ReyGasExpressIAC') {
+                    withCredentials([
+                        string(credentialsId: 'AWS_ACCESS_KEY_ID', variable: 'AWS_ACCESS_KEY_ID'),
+                        string(credentialsId: 'AWS_SECRET_ACCESS_KEY', variable: 'AWS_SECRET_ACCESS_KEY')
+                    ]) {
+                        sh '''
+                            terraform plan \
+                              -var="acm_certificate_arn=arn:aws:acm:us-east-1:123456789012:certificate/12345678-1234-1234-1234-123456789012" \
+                              -out=tfplan
+                        '''
+                    }
+                }
+            }
+        }
+
+        stage('Aprobar y Aplicar') {
+            steps {
+                dir('ReyGasExpressIAC') {
+                    withCredentials([
+                        string(credentialsId: 'AWS_ACCESS_KEY_ID', variable: 'AWS_ACCESS_KEY_ID'),
+                        string(credentialsId: 'AWS_SECRET_ACCESS_KEY', variable: 'AWS_SECRET_ACCESS_KEY')
+                    ]) {
+                        input message: "¿Aplicar los cambios en infraestructura?"
+                        sh 'terraform apply tfplan'
+                    }
+                }
+            }
+        }
+    }
+}

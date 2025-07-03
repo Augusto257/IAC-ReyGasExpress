@@ -12,118 +12,118 @@ resource "aws_apigatewayv2_api" "reyGasExpress_api" {
 
 # Integración para register_order_lambda
 resource "aws_apigatewayv2_integration" "register_order_lambda_integration" {
-  api_id             = aws_apigatewayv2_api.reyGasExpress_api.id
-  integration_type   = "AWS_PROXY"
-  integration_method = "POST"
-  integration_uri    = aws_lambda_function.register_order_lambda.invoke_arn
+  api_id               = aws_apigatewayv2_api.reyGasExpress_api.id
+  integration_type     = "AWS_PROXY"
+  integration_method   = "POST"
+  integration_uri      = aws_lambda_function.register_order_lambda.invoke_arn
   timeout_milliseconds = 29000
 }
 
 # Integración para process_order_lambda
 resource "aws_apigatewayv2_integration" "process_order_lambda_integration" {
-  api_id             = aws_apigatewayv2_api.reyGasExpress_api.id
-  integration_type   = "AWS_PROXY"
-  integration_method = "POST"
-  integration_uri    = aws_lambda_function.process_order_lambda.invoke_arn
+  api_id               = aws_apigatewayv2_api.reyGasExpress_api.id
+  integration_type     = "AWS_PROXY"
+  integration_method   = "POST"
+  integration_uri      = aws_lambda_function.process_order_lambda.invoke_arn
   timeout_milliseconds = 29000
 }
 
 # Integración para analyze_preferences_lambda
 resource "aws_apigatewayv2_integration" "analyze_preferences_lambda_integration" {
-  api_id             = aws_apigatewayv2_api.reyGasExpress_api.id
-  integration_type   = "AWS_PROXY"
-  integration_method = "POST"
-  integration_uri    = aws_lambda_function.analyze_preferences_lambda.invoke_arn
+  api_id               = aws_apigatewayv2_api.reyGasExpress_api.id
+  integration_type     = "AWS_PROXY"
+  integration_method   = "POST"
+  integration_uri      = aws_lambda_function.analyze_preferences_lambda.invoke_arn
   timeout_milliseconds = 29000
 }
 
 # Integración para generate_report_lambda
 resource "aws_apigatewayv2_integration" "generate_report_lambda_integration" {
-  api_id             = aws_apigatewayv2_api.reyGasExpress_api.id
-  integration_type   = "AWS_PROXY"
-  integration_method = "POST"
-  integration_uri    = aws_lambda_function.generate_report_lambda.invoke_arn
+  api_id               = aws_apigatewayv2_api.reyGasExpress_api.id
+  integration_type     = "AWS_PROXY"
+  integration_method   = "POST"
+  integration_uri      = aws_lambda_function.generate_report_lambda.invoke_arn
   timeout_milliseconds = 29000
 }
 
 # Integración para send_email_report_lambda
 resource "aws_apigatewayv2_integration" "send_email_report_lambda_integration" {
-  api_id             = aws_apigatewayv2_api.reyGasExpress_api.id
-  integration_type   = "AWS_PROXY"
-  integration_method = "POST"
-  integration_uri    = aws_lambda_function.send_email_report_lambda.invoke_arn
+  api_id               = aws_apigatewayv2_api.reyGasExpress_api.id
+  integration_type     = "AWS_PROXY"
+  integration_method   = "POST"
+  integration_uri      = aws_lambda_function.send_email_report_lambda.invoke_arn
   timeout_milliseconds = 29000
 }
 
 # Configuración de rutas para cada Lambda
 resource "aws_apigatewayv2_route" "register_order_route" {
-  api_id    = aws_apigatewayv2_api.reyGasExpress_api.id
-  route_key = "POST /orders"
-  target    = "integrations/${aws_apigatewayv2_integration.register_order_lambda_integration.id}"
+  api_id             = aws_apigatewayv2_api.reyGasExpress_api.id
+  route_key          = "POST /orders"
+  target             = "integrations/${aws_apigatewayv2_integration.register_order_lambda_integration.id}"
   authorization_type = "AWS_IAM"
 }
 
 resource "aws_apigatewayv2_route" "process_order_route" {
-  api_id    = aws_apigatewayv2_api.reyGasExpress_api.id
-  route_key = "POST /process-orders"
-  target    = "integrations/${aws_apigatewayv2_integration.process_order_lambda_integration.id}"
+  api_id             = aws_apigatewayv2_api.reyGasExpress_api.id
+  route_key          = "POST /process-orders"
+  target             = "integrations/${aws_apigatewayv2_integration.process_order_lambda_integration.id}"
   authorization_type = "AWS_IAM"
 }
 
 resource "aws_apigatewayv2_route" "analyze_preferences_route" {
-  api_id    = aws_apigatewayv2_api.reyGasExpress_api.id
-  route_key = "POST /analyze-preferences"
-  target    = "integrations/${aws_apigatewayv2_integration.analyze_preferences_lambda_integration.id}"
+  api_id             = aws_apigatewayv2_api.reyGasExpress_api.id
+  route_key          = "POST /analyze-preferences"
+  target             = "integrations/${aws_apigatewayv2_integration.analyze_preferences_lambda_integration.id}"
   authorization_type = "AWS_IAM"
 }
 
 resource "aws_apigatewayv2_route" "generate_report_route" {
-  api_id    = aws_apigatewayv2_api.reyGasExpress_api.id
-  route_key = "POST /generate-report"
-  target    = "integrations/${aws_apigatewayv2_integration.generate_report_lambda_integration.id}"
+  api_id             = aws_apigatewayv2_api.reyGasExpress_api.id
+  route_key          = "POST /generate-report"
+  target             = "integrations/${aws_apigatewayv2_integration.generate_report_lambda_integration.id}"
   authorization_type = "AWS_IAM"
 }
 
 resource "aws_apigatewayv2_route" "send_email_report_route" {
-  api_id    = aws_apigatewayv2_api.reyGasExpress_api.id
-  route_key = "POST /send-email-report"
-  target    = "integrations/${aws_apigatewayv2_integration.send_email_report_lambda_integration.id}"
+  api_id             = aws_apigatewayv2_api.reyGasExpress_api.id
+  route_key          = "POST /send-email-report"
+  target             = "integrations/${aws_apigatewayv2_integration.send_email_report_lambda_integration.id}"
   authorization_type = "AWS_IAM"
 }
 
 # Configuración de balanceo de carga 70-30 entre dos stages
 resource "aws_apigatewayv2_stage" "primary_stage" {
-  api_id      = aws_apigatewayv2_api.reyGasExpress_api.id
-  name        = "v1"
+  api_id        = aws_apigatewayv2_api.reyGasExpress_api.id
+  name          = "v1"
   deployment_id = aws_apigatewayv2_deployment.api_deployment.id
-  auto_deploy = true
-  
+  auto_deploy   = true
+
   default_route_settings {
     throttling_burst_limit = 500
-    throttling_rate_limit = 1000
+    throttling_rate_limit  = 1000
   }
-  
+
   tags = {
-    Environment = var.environment
-    Application = "reyGasExpress"
+    Environment   = var.environment
+    Application   = "reyGasExpress"
     TrafficWeight = "70"
   }
 }
 
 resource "aws_apigatewayv2_stage" "secondary_stage" {
-  api_id      = aws_apigatewayv2_api.reyGasExpress_api.id
-  name        = "v2"
+  api_id        = aws_apigatewayv2_api.reyGasExpress_api.id
+  name          = "v2"
   deployment_id = aws_apigatewayv2_deployment.api_deployment.id
-  auto_deploy = true
-  
+  auto_deploy   = true
+
   default_route_settings {
     throttling_burst_limit = 500
-    throttling_rate_limit = 1000
+    throttling_rate_limit  = 1000
   }
-  
+
   tags = {
-    Environment = var.environment
-    Application = "reyGasExpress"
+    Environment   = var.environment
+    Application   = "reyGasExpress"
     TrafficWeight = "30"
   }
 }
@@ -149,24 +149,24 @@ resource "aws_apigatewayv2_deployment" "api_deployment" {
 
 # Crea una etapa de la API
 resource "aws_apigatewayv2_stage" "reyGasExpress_stage" {
-  api_id      = aws_apigatewayv2_api.reyGasExpress_api.id
-  name        = var.api_stage_name
+  api_id        = aws_apigatewayv2_api.reyGasExpress_api.id
+  name          = var.api_stage_name
   deployment_id = aws_apigatewayv2_deployment.api_deployment.id
-  auto_deploy = true
+  auto_deploy   = true
 
   access_log_settings {
     destination_arn = aws_cloudwatch_log_group.api_gateway_log_group.arn
-    format          = jsonencode({
-      requestId               = "$context.requestId",
-      ip                      = "$context.identity.sourceIp",
-      requestTime             = "$context.requestTime",
-      httpMethod              = "$context.httpMethod",
-      path                    = "$context.path",
-      status                  = "$context.status",
-      protocol                = "$context.protocol",
-      responseLength          = "$context.responseLength",
-      integrationLatency      = "$context.integration.latency",
-      integrationStatus       = "$context.integration.status"
+    format = jsonencode({
+      requestId          = "$context.requestId",
+      ip                 = "$context.identity.sourceIp",
+      requestTime        = "$context.requestTime",
+      httpMethod         = "$context.httpMethod",
+      path               = "$context.path",
+      status             = "$context.status",
+      protocol           = "$context.protocol",
+      responseLength     = "$context.responseLength",
+      integrationLatency = "$context.integration.latency",
+      integrationStatus  = "$context.integration.status"
     })
   }
 
@@ -183,7 +183,7 @@ resource "aws_lambda_permission" "allow_apigateway_invoke_register_order_lambda"
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.register_order_lambda.function_name
   principal     = "apigateway.amazonaws.com"
-  source_arn = "${aws_apigatewayv2_api.reyGasExpress_api.execution_arn}/*/*"
+  source_arn    = "${aws_apigatewayv2_api.reyGasExpress_api.execution_arn}/*/*"
 }
 
 resource "aws_lambda_permission" "allow_apigateway_invoke_process_order_lambda" {
@@ -191,7 +191,7 @@ resource "aws_lambda_permission" "allow_apigateway_invoke_process_order_lambda" 
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.process_order_lambda.function_name
   principal     = "apigateway.amazonaws.com"
-  source_arn = "${aws_apigatewayv2_api.reyGasExpress_api.execution_arn}/*/*"
+  source_arn    = "${aws_apigatewayv2_api.reyGasExpress_api.execution_arn}/*/*"
 }
 
 resource "aws_lambda_permission" "allow_apigateway_invoke_analyze_preferences_lambda" {
@@ -199,7 +199,7 @@ resource "aws_lambda_permission" "allow_apigateway_invoke_analyze_preferences_la
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.analyze_preferences_lambda.function_name
   principal     = "apigateway.amazonaws.com"
-  source_arn = "${aws_apigatewayv2_api.reyGasExpress_api.execution_arn}/*/*"
+  source_arn    = "${aws_apigatewayv2_api.reyGasExpress_api.execution_arn}/*/*"
 }
 
 resource "aws_lambda_permission" "allow_apigateway_invoke_generate_report_lambda" {
@@ -207,7 +207,7 @@ resource "aws_lambda_permission" "allow_apigateway_invoke_generate_report_lambda
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.generate_report_lambda.function_name
   principal     = "apigateway.amazonaws.com"
-  source_arn = "${aws_apigatewayv2_api.reyGasExpress_api.execution_arn}/*/*"
+  source_arn    = "${aws_apigatewayv2_api.reyGasExpress_api.execution_arn}/*/*"
 }
 
 resource "aws_lambda_permission" "allow_apigateway_invoke_send_email_report_lambda" {
@@ -215,7 +215,7 @@ resource "aws_lambda_permission" "allow_apigateway_invoke_send_email_report_lamb
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.send_email_report_lambda.function_name
   principal     = "apigateway.amazonaws.com"
-  source_arn = "${aws_apigatewayv2_api.reyGasExpress_api.execution_arn}/*/*"
+  source_arn    = "${aws_apigatewayv2_api.reyGasExpress_api.execution_arn}/*/*"
 }
 
 resource "aws_kms_key" "cloudwatch_logs_encryption" {
@@ -228,26 +228,26 @@ resource "aws_kms_key" "cloudwatch_logs_encryption" {
     Id      = "key-policy",
     Statement = [
       {
-        Effect    = "Allow",
+        Effect = "Allow",
         Principal = {
           AWS = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"
         },
-        Action    = "kms:*",
-        Resource  = "*"
+        Action   = "kms:*",
+        Resource = "*"
       },
       {
-        Effect    = "Allow",
+        Effect = "Allow",
         Principal = {
           Service = "logs.${var.aws_region}.amazonaws.com"
         },
-        Action    = [
+        Action = [
           "kms:Encrypt*",
           "kms:Decrypt*",
           "kms:ReEncrypt*",
           "kms:GenerateDataKey*",
           "kms:Describe*"
         ],
-        Resource  = "*"
+        Resource = "*"
       }
     ]
   })

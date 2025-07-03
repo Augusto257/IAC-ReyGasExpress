@@ -26,7 +26,7 @@ resource "aws_lambda_function" "load_balancer_lambda" {
   runtime       = "nodejs18.x"
   role          = aws_iam_role.lambda_execution_role.arn
   filename      = "${path.module}/lambda_code/loadBalancer.zip"
-  
+
   environment {
     variables = {
       PRIMARY_ENDPOINT   = "https://${aws_apigatewayv2_api.reyGasExpress_api.id}.execute-api.${var.aws_region}.amazonaws.com/v1"
@@ -58,10 +58,10 @@ resource "aws_cloudfront_distribution" "reygas_distribution" {
       origin_id   = "API-Gateway"
 
       custom_origin_config {
-        http_port            = 80
-        https_port           = 443
+        http_port              = 80
+        https_port             = 443
         origin_protocol_policy = "https-only"
-        origin_ssl_protocols = ["TLSv1.2"]
+        origin_ssl_protocols   = ["TLSv1.2"]
       }
     }
   }
@@ -108,16 +108,16 @@ resource "aws_cloudfront_distribution" "reygas_distribution" {
   dynamic "ordered_cache_behavior" {
     for_each = var.api_gateway_domain != "" ? [1] : []
     content {
-      path_pattern         = "/api/*"
-      allowed_methods      = ["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"]
-      cached_methods       = ["GET", "HEAD"]
-      target_origin_id     = "API-Gateway"
+      path_pattern           = "/api/*"
+      allowed_methods        = ["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"]
+      cached_methods         = ["GET", "HEAD"]
+      target_origin_id       = "API-Gateway"
       viewer_protocol_policy = "https-only"
 
       lambda_function_association {
-      event_type   = "viewer-request"
-      lambda_arn   = aws_lambda_function.load_balancer_lambda.qualified_arn
-      include_body = false
+        event_type   = "viewer-request"
+        lambda_arn   = aws_lambda_function.load_balancer_lambda.qualified_arn
+        include_body = false
       }
 
       forwarded_values {
@@ -144,8 +144,8 @@ resource "aws_cloudfront_distribution" "reygas_distribution" {
   }
 
   viewer_certificate {
-  cloudfront_default_certificate = true
-  ssl_support_method            = "sni-only"
+    cloudfront_default_certificate = true
+    ssl_support_method             = "sni-only"
   }
 
   tags = {
@@ -170,13 +170,13 @@ resource "aws_s3_bucket_policy" "reygas_bucket_policy" {
     Version = "2012-10-17"
     Statement = [
       {
-        Sid       = "AllowCloudFrontServicePrincipal"
-        Effect    = "Allow"
+        Sid    = "AllowCloudFrontServicePrincipal"
+        Effect = "Allow"
         Principal = {
           Service = "cloudfront.amazonaws.com"
         }
-        Action    = "s3:GetObject"
-        Resource  = "${aws_s3_bucket.reygas_frontend_bucket.arn}/*"
+        Action   = "s3:GetObject"
+        Resource = "${aws_s3_bucket.reygas_frontend_bucket.arn}/*"
         Condition = {
           StringEquals = {
             "AWS:SourceArn" = aws_cloudfront_distribution.reygas_distribution.arn
