@@ -50,29 +50,6 @@ resource "aws_iam_policy" "lambda_all_permissions_policy" {
         Effect   = "Allow",
         Resource = "*"
       },
-      # Permisos para DynamoDB: Escribir elementos
-      {
-        Action = [
-          "dynamodb:PutItem",
-          "dynamodb:UpdateItem",
-          "dynamodb:BatchWriteItem"
-        ],
-        Effect   = "Allow",
-        Resource = aws_dynamodb_table.reyGasExpress_orders_table.arn
-      },
-      # Permisos para DynamoDB: Leer elementos 
-      {
-        Action = [
-          "dynamodb:GetItem",
-          "dynamodb:Query",
-          "dynamodb:Scan"
-        ],
-        Effect = "Allow",
-        Resource = [
-          aws_dynamodb_table.reyGasExpress_orders_table.arn,
-          "${aws_dynamodb_table.reyGasExpress_orders_table.arn}/index/*"
-        ]
-      },
       # Permisos para EventBridge: Enviar eventos
       {
         Action   = "events:PutEvents",

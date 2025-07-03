@@ -90,44 +90,6 @@ resource "aws_cloudwatch_dashboard" "reygas_express_dashboard" {
           period      = 300
           stat        = "Sum"
         }
-      },
-      {
-        type   = "metric"
-        x      = 8
-        y      = 12
-        width  = 8
-        height = 6
-        properties = {
-          metrics = [
-            [ "AWS/DynamoDB", "ConsumedReadCapacityUnits", "TableName", aws_dynamodb_table.reyGasExpress_orders_table.name, { "label": "Orders Table Read Capacity" } ],
-            [ "AWS/DynamoDB", "ConsumedWriteCapacityUnits", "TableName", aws_dynamodb_table.reyGasExpress_orders_table.name, { "label": "Orders Table Write Capacity" } ]
-          ]
-          view        = "timeSeries"
-          stacked     = false
-          region      = var.aws_region
-          title       = "DynamoDB Consumed Capacity"
-          period      = 300
-          stat        = "Average"
-        }
-      },
-      {
-        type   = "metric"
-        x      = 16
-        y      = 12
-        width  = 8
-        height = 6
-        properties = {
-          metrics = [
-            [ "AWS/DynamoDB", "SuccessfulRequestLatency", "TableName", aws_dynamodb_table.reyGasExpress_orders_table.name, "Operation", "GetItem", { "label": "Orders Table GetItem Latency" } ],
-            [ "AWS/DynamoDB", "SuccessfulRequestLatency", "TableName", aws_dynamodb_table.reyGasExpress_orders_table.name, "Operation", "PutItem", { "label": "Orders Table PutItem Latency" } ]
-          ]
-          view        = "timeSeries"
-          stacked     = false
-          region      = var.aws_region
-          title       = "DynamoDB Latency"
-          period      = 300
-          stat        = "Average"
-        }
       }
     ]
   })

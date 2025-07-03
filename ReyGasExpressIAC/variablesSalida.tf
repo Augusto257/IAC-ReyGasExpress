@@ -32,17 +32,6 @@ output "cloudfront_hosted_zone_id" {
   value       = aws_cloudfront_distribution.reygas_distribution.hosted_zone_id
 }
 
-# Variables de salida para DynamoDB
-output "orders_table_name" {
-  description = "Nombre de la tabla DynamoDB de pedidos"
-  value       = aws_dynamodb_table.reyGasExpress_orders_table.name
-}
-
-output "orders_table_arn" {
-  description = "ARN de la tabla DynamoDB de pedidos"
-  value       = aws_dynamodb_table.reyGasExpress_orders_table.arn
-}
-
 # Salidas para el bucket S3 de análisis
 output "analysis_bucket_name" {
   description = "Nombre del bucket S3 para los datos de análisis."

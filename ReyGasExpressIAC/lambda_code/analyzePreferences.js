@@ -1,10 +1,10 @@
 const AWS = require('aws-sdk');
-const dynamodb = new AWS.DynamoDB.DocumentClient();
+// const dynamodb = new AWS.DynamoDB.DocumentClient(); // Eliminado
 const s3 = new AWS.S3();
 const sns = new AWS.SNS();
 
 exports.handler = async (event) => {
-    console.log('Lambda: Analizar Preferencias invocada');
+    console.log('Lambda: Analizar Preferencias invocada (modo temporal sin DB)');
     console.log('Evento EventBridge recibido:', JSON.stringify(event, null, 2));
     
     try {
@@ -12,22 +12,22 @@ exports.handler = async (event) => {
             const eventDetail = record.detail || event.detail;
             const { orderId, customerId, preferences, items } = eventDetail;
 
-            const queryParams = {
-                TableName: process.env.ORDERS_TABLE_NAME,
-                IndexName: 'customer-index',
-                KeyConditionExpression: 'customerId = :customerId',
-                ExpressionAttributeValues: {
-                    ':customerId': customerId
-                },
-                Limit: 50
-            };
+            // Lógica de consulta a DynamoDB eliminada
+            // const queryParams = { ... };
+            // const historicalData = await dynamodb.query(queryParams).promise();
 
-            const historicalData = await dynamodb.query(queryParams).promise();
+            // Simular datos históricos para que la función no falle.
+            // En el futuro, esto se reemplazará con la consulta a RDS.
+            const historicalData = {
+                Items: [], // Vacío por ahora, o puedes añadir datos de prueba si lo necesitas para el desarrollo local.
+                Count: 0
+            };
+            console.log('Consulta a DynamoDB *omitida* para análisis de preferencias.');
             
             const analysis = {
                 customerId,
                 analysisDate: new Date().toISOString(),
-                totalOrders: historicalData.Count,
+                totalOrders: historicalData.Count, // Será 0 por ahora
                 preferences: analyzeCustomerPreferences(historicalData.Items, preferences),
                 recommendations: generateRecommendations(historicalData.Items, items),
                 trends: identifyTrends(historicalData.Items)
@@ -60,12 +60,14 @@ exports.handler = async (event) => {
         return { statusCode: 200 };
 
     } catch (error) {
-        console.error('Error en analyzePreferences:', error);
+        console.error('Error en analyzePreferences (modo temporal sin DB):', error);
         throw error;
     }
 };
 
 function analyzeCustomerPreferences(historicalOrders, currentPreferences) {
+    // Estas funciones auxiliares pueden permanecer, pero sus resultados serán limitados
+    // hasta que se obtengan datos reales de RDS.
     const categoryFrequency = {};
     const priceRanges = [];
     
@@ -88,20 +90,20 @@ function analyzeCustomerPreferences(historicalOrders, currentPreferences) {
 
 function generateRecommendations(historicalOrders, currentItems) {
     return {
-        suggestedItems: ['Recomendación basada en historial'],
-        crossSellOpportunities: ['Productos complementarios'],
-        seasonalRecommendations: ['Productos de temporada']
+        suggestedItems: ['Recomendación basada en historial (temporal)'],
+        crossSellOpportunities: ['Productos complementarios (temporal)'],
+        seasonalRecommendations: ['Productos de temporada (temporal)']
     };
 }
 
 function identifyTrends(historicalOrders) {
     return {
-        orderFrequency: 'monthly',
-        spendingTrend: 'increasing',
+        orderFrequency: 'monthly (temporal)',
+        spendingTrend: 'increasing (temporal)',
         categoryShifts: []
     };
 }
 
 function detectPreferenceChanges(historical, current) {
-    return Math.random() > 0.8;
+    return Math.random() > 0.8; // Siempre devuelve un valor aleatorio por ahora
 }

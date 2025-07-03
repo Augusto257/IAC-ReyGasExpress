@@ -41,7 +41,6 @@ resource "aws_lambda_function" "process_order_lambda" {
 
   environment {
     variables = {
-      ORDERS_TABLE_NAME = aws_dynamodb_table.reyGasExpress_orders_table.name
       EVENT_BUS_NAME    = "${var.event_bus_name}-${var.environment}"
     }
   }
@@ -72,7 +71,6 @@ resource "aws_lambda_function" "analyze_preferences_lambda" {
 
   environment {
     variables = {
-      ORDERS_TABLE_NAME    = aws_dynamodb_table.reyGasExpress_orders_table.name
       ANALYSIS_BUCKET_NAME = aws_s3_bucket.reyGasExpress_analysis_bucket.id
       REPORT_TOPIC_ARN     = aws_sns_topic.reyGasExpress_reports_topic.arn
     }

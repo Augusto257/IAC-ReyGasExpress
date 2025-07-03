@@ -87,13 +87,6 @@ variable "api_stage_name" {
   default     = "dev"
 }
 
-# Variables de entrada para DynamoDB
-variable "orders_table_name" {
-  description = "Nombre de la tabla DynamoDB para almacenar pedidos procesados"
-  type        = string
-  default     = "reyGasExpress-orders-table"
-}
-
 # Variable para el EventBridge Bus
 variable "event_bus_name" {
   description = "Nombre base para enviar eventos de pedidos procesados."
@@ -152,4 +145,3 @@ variable "lambda_subnet_ids" {
   type        = list(string)
   default     = [] 
 }
-
