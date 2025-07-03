@@ -1,6 +1,8 @@
-const AWS = require('aws-sdk');
-const s3 = new AWS.S3();
-const sns = new AWS.SNS();
+const { S3Client, GetObjectCommand, PutObjectCommand } = require('@aws-sdk/client-s3');
+const { SNSClient, PublishCommand } = require('@aws-sdk/client-sns');
+
+const s3 = new S3Client({ region: process.env.AWS_REGION });
+const sns = new SNSClient({ region: process.env.AWS_REGION });
 
 exports.handler = async (event) => {
     console.log('Lambda: Generar Documento de Reporte de preferencias invocada');
@@ -16,23 +18,23 @@ exports.handler = async (event) => {
                 Key: s3Location.replace(`s3://${process.env.ANALYSIS_BUCKET_NAME}/`, '')
             };
 
-            const analysisData = await s3.getObject(s3Params).promise();
-            const analysis = JSON.parse(analysisData.Body.toString());
+            const analysisData = await s3.send(new GetObjectCommand(s3Params));
+            const analysis = JSON.parse(await analysisData.Body.transformToString());
 
             const reportHtml = generateHtmlReport(analysis);
             
             const reportKey = `reports/${customerId}/${Date.now()}_preferences_report.html`;
-            await s3.putObject({
+            await s3.send(new PutObjectCommand({
                 Bucket: process.env.REPORTS_BUCKET_NAME,
                 Key: reportKey,
                 Body: reportHtml,
                 ContentType: 'text/html',
                 ACL: 'private'
-            }).promise();
+            }));
 
             console.log('Reporte generado y guardado:', reportKey);
 
-            await sns.publish({
+            await sns.send(new PublishCommand({
                 TopicArn: process.env.EMAIL_TOPIC_ARN,
                 Message: JSON.stringify({
                     type: 'report-ready',
@@ -42,7 +44,7 @@ exports.handler = async (event) => {
                     generatedAt: new Date().toISOString()
                 }),
                 Subject: `Reporte de preferencias generado - Cliente ${customerId}`
-            }).promise();
+            }));
         }
 
         return { statusCode: 200 };
@@ -54,6 +56,14 @@ exports.handler = async (event) => {
 };
 
 function generateHtmlReport(analysis) {
+    const favoriteCategoriesHtml = analysis.preferences.favoriteCategories?.map(([cat, count]) => 
+        `<p>${cat}: ${count} órdenes</p>`
+    ).join('') || 'No hay datos suficientes';
+
+    const suggestedItemsHtml = analysis.recommendations?.suggestedItems?.map(item => 
+        `<li>${item}</li>`
+    ).join('') || '<li>No hay recomendaciones disponibles</li>';
+
     return `
 <!DOCTYPE html>
 <html>
@@ -82,16 +92,14 @@ function generateHtmlReport(analysis) {
     <div class="section">
         <h2>Categorías Favoritas</h2>
         <div class="chart">
-            ${analysis.preferences.favoriteCategories?.map(([cat, count]) => 
-                `<p>${cat}: ${count} órdenes</p>`
-            ).join('') || 'No hay datos suficientes'}
+            ${favoriteCategoriesHtml}
         </div>
     </div>
     
     <div class="section">
         <h2>Recomendaciones</h2>
         <ul>
-            ${analysis.recommendations?.suggestedItems?.map(item => `<li>${item}</li>`).join('') || '<li>No hay recomendaciones disponibles</li>'}
+            ${suggestedItemsHtml}
         </ul>
     </div>
 </body>

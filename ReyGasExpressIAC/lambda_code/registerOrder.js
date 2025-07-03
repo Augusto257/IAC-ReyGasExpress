@@ -1,6 +1,5 @@
 const { CloudWatchClient, PutMetricDataCommand } = require('@aws-sdk/client-cloudwatch');
 
-// const sqs = new SQSClient({ region: process.env.AWS_REGION }); // Eliminado por ahora
 const cloudwatch = new CloudWatchClient({ region: process.env.AWS_REGION });
 
 function log(level, message, context = {}) {
@@ -19,7 +18,7 @@ exports.handler = async (event) => {
 
     let statusCode = 200;
     let response = {
-        message: 'Pedido recibido y encolado para procesamiento.', // Mantener mensaje por ahora
+        message: 'Pedido recibido. Enviando para procesamiento.',
         orderId: null,
         details: null
     };
@@ -59,25 +58,7 @@ exports.handler = async (event) => {
             }));
         } else {
             response.orderId = `order-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
-            
-            // Lógica de envío a SQS eliminada por ahora
-            // await sqs.send(new SendMessageCommand({
-            //     QueueUrl: process.env.SQS_QUEUE_URL,
-            //     MessageBody: JSON.stringify({
-            //         orderId: response.orderId,
-            //         customerId,
-            //         items,
-            //         totalAmount,
-            //         preferences: preferences || {},
-            //         timestamp: new Date().toISOString(),
-            //         status: 'pending'
-            //     }),
-            //     MessageAttributes: {
-            //         OrderType: { DataType: 'String', StringValue: 'new-order' }
-            //     }
-            // }));
-
-            log('INFO', 'Pedido recibido y validado (SQS deshabilitado temporalmente)', { orderId: response.orderId }); // Cambiar mensaje
+            log('INFO', 'Pedido recibido y validado. Listo para ser procesado por otra Lambda.', { orderId: response.orderId });
         }
 
     } catch (error) {

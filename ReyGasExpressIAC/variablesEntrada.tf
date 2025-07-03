@@ -140,8 +140,57 @@ variable "acm_certificate_arn" {
   type        = string
 }
 
-variable "lambda_subnet_ids" {
-  description = "IDs de las subredes donde se desplegarán las Lambdas"
-  type        = list(string)
-  default     = [] 
+# Variables de entrada para RDS PostgreSQL
+variable "db_instance_identifier" {
+  description = "Identificador único para la instancia RDS PostgreSQL"
+  type        = string
+  default     = "reygasexpress-db-instance"
+}
+
+variable "db_name" {
+  description = "Nombre de la base de datos PostgreSQL"
+  type        = string
+  default     = "reygasdb"
+}
+
+variable "db_username" {
+  description = "Nombre de usuario maestro para la base de datos PostgreSQL"
+  type        = string
+  default     = "reygasadmin"
+}
+
+variable "db_master_password_secret_name" {
+  description = "Nombre del Secret en Secrets Manager que contendrá la contraseña maestra de la DB"
+  type        = string
+  default     = "reyGasExpress-db-master-password"
+}
+
+variable "db_instance_class" {
+  description = "Clase de instancia para la base de datos RDS"
+  type        = string
+  default     = "db.t3.micro"
+}
+
+variable "db_allocated_storage" {
+  description = "Almacenamiento inicial asignado para la base de datos (GB)"
+  type        = number
+  default     = 20
+}
+
+variable "db_engine_version" {
+  description = "Versión del motor de PostgreSQL"
+  type        = string
+  default     = "12.20"
+}
+
+variable "db_skip_final_snapshot" {
+  description = "Determina si se omite la creación de un snapshot final al eliminar la DB"
+  type        = bool
+  default     = true # Cambiar a 'false' en producción
+}
+
+variable "db_multi_az" {
+  description = "Especifica si se implementa la instancia en Multi-AZ para alta disponibilidad"
+  type        = bool
+  default     = false # Cambiar a 'true' en producción
 }

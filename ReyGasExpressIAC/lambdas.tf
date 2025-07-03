@@ -24,8 +24,6 @@ resource "aws_lambda_function" "register_order_lambda" {
   publish = true
 }
 
-
-
 # Crea la función Lambda para "Procesar y almacenar pedidos"
 resource "aws_lambda_function" "process_order_lambda" {
   function_name = "reyGasExpress-processOrder-${var.environment}"
@@ -39,9 +37,21 @@ resource "aws_lambda_function" "process_order_lambda" {
   timeout     = 60
   memory_size = 256
 
+  # Configuración de VPC para acceder a RDS
+  vpc_config {
+    subnet_ids         = [aws_subnet.lambda_subnet_1.id, aws_subnet.lambda_subnet_2.id]
+    security_group_ids = [aws_security_group.lambda_sg.id]
+  }
+
   environment {
     variables = {
-      EVENT_BUS_NAME    = "${var.event_bus_name}-${var.environment}"
+      EVENT_BUS_NAME           = "${var.event_bus_name}-${var.environment}"
+      # Variables para la conexión a RDS PostgreSQL
+      DB_HOST                  = aws_db_instance.reygas_postgres_db.address
+      DB_PORT                  = aws_db_instance.reygas_postgres_db.port
+      DB_NAME                  = var.db_name
+      DB_USERNAME              = var.db_username
+      DB_PASSWORD_SECRET_ARN   = aws_secretsmanager_secret.db_master_password.arn
     }
   }
 
@@ -69,10 +79,22 @@ resource "aws_lambda_function" "analyze_preferences_lambda" {
   timeout     = 90
   memory_size = 256
 
+  # Configuración de VPC para acceder a RDS
+  vpc_config {
+    subnet_ids         = [aws_subnet.lambda_subnet_1.id, aws_subnet.lambda_subnet_2.id]
+    security_group_ids = [aws_security_group.lambda_sg.id]
+  }
+
   environment {
     variables = {
       ANALYSIS_BUCKET_NAME = aws_s3_bucket.reyGasExpress_analysis_bucket.id
       REPORT_TOPIC_ARN     = aws_sns_topic.reyGasExpress_reports_topic.arn
+      # Variables para la conexión a RDS PostgreSQL
+      DB_HOST                  = aws_db_instance.reygas_postgres_db.address
+      DB_PORT                  = aws_db_instance.reygas_postgres_db.port
+      DB_NAME                  = var.db_name
+      DB_USERNAME              = var.db_username
+      DB_PASSWORD_SECRET_ARN   = aws_secretsmanager_secret.db_master_password.arn
     }
   }
 
@@ -85,40 +107,6 @@ resource "aws_lambda_function" "analyze_preferences_lambda" {
     Application = "reyGasExpress"
     ManagedBy   = "Terraform"
   }
-}
-
-# EventBridge Rule para invocar la Lambda analyzePreferences cuando se procesa un pedido
-resource "aws_cloudwatch_event_rule" "analyze_preferences_rule" {
-  name           = "reyGasExpress-analyzePreferences-rule-${var.environment}"
-  description    = "Captura eventos de pedidos procesados para análisis de preferencias."
-  event_bus_name = aws_cloudwatch_event_bus.reyGasExpress_event_bus.name
-
-  event_pattern = jsonencode({
-    source        = ["orders.system"],
-    "detail-type" = ["Order Processed"]
-  })
-
-  tags = {
-    Environment = var.environment
-    Application = "reyGasExpress"
-    ManagedBy   = "Terraform"
-  }
-}
-
-# Permiso para que EventBridge invoque la Lambda analyzePreferences
-resource "aws_lambda_permission" "allow_eventbridge_invoke_analyze_preferences_lambda" {
-  statement_id  = "AllowEventBridgeInvokeAnalyzePreferences"
-  action        = "lambda:InvokeFunction"
-  function_name = aws_lambda_function.analyze_preferences_lambda.function_name
-  principal     = "events.amazonaws.com"
-  source_arn    = aws_cloudwatch_event_rule.analyze_preferences_rule.arn
-}
-
-# Target para la EventBridge Rule: la Lambda analyzePreferences
-resource "aws_cloudwatch_event_target" "analyze_preferences_lambda_target" {
-  rule           = aws_cloudwatch_event_rule.analyze_preferences_rule.name
-  arn            = aws_lambda_function.analyze_preferences_lambda.arn
-  event_bus_name = aws_cloudwatch_event_bus.reyGasExpress_event_bus.name
 }
 
 # Crea la función Lambda para "Generar Documento de Reporte de preferencias"

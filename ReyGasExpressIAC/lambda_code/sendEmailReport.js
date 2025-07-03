@@ -1,6 +1,8 @@
-const AWS = require('aws-sdk');
-const ses = new AWS.SES();
-const s3 = new AWS.S3();
+const { SESClient, SendEmailCommand } = require('@aws-sdk/client-ses');
+const { S3Client, GetObjectCommand } = require('@aws-sdk/client-s3');
+
+const ses = new SESClient({ region: process.env.AWS_REGION });
+const s3 = new S3Client({ region: process.env.AWS_REGION });
 
 exports.handler = async (event) => {
     console.log('Lambda: Enviar Reporte por correo invocada');
@@ -16,8 +18,8 @@ exports.handler = async (event) => {
                 Key: reportLocation.replace(`s3://${process.env.REPORTS_BUCKET_NAME}/`, '')
             };
 
-            const reportData = await s3.getObject(s3Params).promise();
-            const reportHtml = reportData.Body.toString();
+            const reportData = await s3.send(new GetObjectCommand(s3Params));
+            const reportHtml = await reportData.Body.transformToString();
 
             const emailParams = {
                 Source: process.env.FROM_EMAIL,
@@ -42,7 +44,7 @@ exports.handler = async (event) => {
                 }
             };
 
-            const result = await ses.sendEmail(emailParams).promise();
+            const result = await ses.send(new SendEmailCommand(emailParams));
             console.log('Email enviado:', result.MessageId);
         }
 
@@ -51,7 +53,7 @@ exports.handler = async (event) => {
     } catch (error) {
         console.error('Error en sendEmailReport:', error);
         
-        if (error.code === 'MessageRejected' || error.code === 'InvalidParameterValue') {
+        if (error.Code === 'MessageRejected' || error.Code === 'InvalidParameterValue') {
             console.log('Email no pudo ser enviado - posiblemente email no verificado en SES');
             return { statusCode: 200, message: 'Email handling completed with warnings' };
         }
