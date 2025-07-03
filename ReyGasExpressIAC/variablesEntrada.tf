@@ -68,19 +68,6 @@ variable "lambda_execution_role_name" {
   default     = "lambda-execution-role-reyGasExpress"
 }
 
-# Variables de entrada para SQS
-variable "sqs_order_queue_name" {
-  description = "Nombre de la cola SQS para pedidos entrantes"
-  type        = string
-  default     = "reyGasExpress-order-queue"
-}
-
-variable "sqs_order_dlq_name" {
-  description = "Nombre de la cola SQS Dead-Letter para pedidos"
-  type        = string
-  default     = "reyGasExpress-order-dlq"
-}
-
 variable "lambda_code_path" {
   description = "Ruta base a la carpeta que contiene los archivos ZIP de las lambdas."
   type        = string

@@ -50,31 +50,6 @@ resource "aws_iam_policy" "lambda_all_permissions_policy" {
         Effect   = "Allow",
         Resource = "*"
       },
-      # Permisos para SQS: Enviar mensajes
-      {
-        Action = [
-          "sqs:SendMessage",
-          "sqs:GetQueueAttributes",
-          "sqs:GetQueueUrl"
-        ],
-        Effect   = "Allow",
-        Resource = aws_sqs_queue.reyGasExpress_order_queue.arn
-      },
-      # Permisos para SQS: Recibir y eliminar mensajes
-      {
-        Action = [
-          "sqs:SendMessage",
-          "sqs:ReceiveMessage",
-          "sqs:DeleteMessage",
-          "sqs:GetQueueAttributes",
-          "sqs:GetQueueUrl"
-        ],
-        Effect = "Allow",
-        Resource = [
-          aws_sqs_queue.reyGasExpress_order_queue.arn,
-          aws_sqs_queue.reyGasExpress_dlq.arn
-        ]
-      },
       # Permisos para DynamoDB: Escribir elementos
       {
         Action = [
@@ -149,16 +124,6 @@ resource "aws_iam_policy" "lambda_all_permissions_policy" {
         ],
         Effect   = "Allow",
         Resource = "*"
-      },
-
-      # Permisos adicionales específicos para DLQ
-      {
-        Action = [
-          "sqs:SendMessage",
-          "sqs:GetQueueAttributes"
-        ],
-        Effect   = "Allow",
-        Resource = aws_sqs_queue.reyGasExpress_dlq.arn
       }
     ]
   })

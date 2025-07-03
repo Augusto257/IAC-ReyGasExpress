@@ -93,24 +93,6 @@ resource "aws_cloudwatch_dashboard" "reygas_express_dashboard" {
       },
       {
         type   = "metric"
-        x      = 0
-        y      = 12
-        width  = 8
-        height = 6
-        properties = {
-          metrics = [
-            [ "AWS/SQS", "ApproximateNumberOfMessagesVisible", "QueueName", aws_sqs_queue.reyGasExpress_order_queue.name, { "label": "Order Queue Visible Messages" } ]
-          ]
-          view        = "timeSeries"
-          stacked     = false
-          region      = var.aws_region
-          title       = "SQS Visible Messages"
-          period      = 300
-          stat        = "Average"
-        }
-      },
-      {
-        type   = "metric"
         x      = 8
         y      = 12
         width  = 8

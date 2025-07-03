@@ -115,21 +115,6 @@ resource "aws_route_table_association" "lambda_subnet_2_rt" {
   route_table_id = aws_route_table.private_rt.id
 }
 
-resource "aws_vpc_endpoint" "sqs_endpoint" {
-  vpc_id            = aws_vpc.reygas_vpc.id
-  service_name      = "com.amazonaws.${var.aws_region}.sqs"
-  vpc_endpoint_type = "Interface"
-
-  security_group_ids = [aws_security_group.lambda_sg.id]
-  subnet_ids         = [aws_subnet.lambda_subnet_1.id, aws_subnet.lambda_subnet_2.id]
-
-  private_dns_enabled = true
-
-  tags = {
-    Name = "sqs-endpoint-${var.environment}"
-  }
-}
-
 resource "aws_vpc_endpoint" "cloudwatch_endpoint" {
   vpc_id            = aws_vpc.reygas_vpc.id
   service_name      = "com.amazonaws.${var.aws_region}.monitoring"

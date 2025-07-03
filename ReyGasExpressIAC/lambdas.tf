@@ -11,18 +11,8 @@ resource "aws_lambda_function" "register_order_lambda" {
   timeout     = 10
   memory_size = 512
 
-  environment {
-    variables = {
-      SQS_QUEUE_URL = aws_sqs_queue.reyGasExpress_order_queue.id
-    }
-  }
-
   tracing_config {
     mode = "Active"
-  }
-
-  dead_letter_config {
-    target_arn = aws_sqs_queue.reyGasExpress_dlq.arn
   }
 
   tags = {
@@ -60,23 +50,11 @@ resource "aws_lambda_function" "process_order_lambda" {
     mode = "Active"
   }
 
-  dead_letter_config {
-    target_arn = aws_sqs_queue.reyGasExpress_dlq.arn
-  }
-
   tags = {
     Environment = var.environment
     Application = "reyGasExpress"
     ManagedBy   = "Terraform"
   }
-}
-
-# Configura el SQS Event Source Mapping para invocar la Lambda processOrder
-resource "aws_lambda_event_source_mapping" "process_order_sqs_trigger" {
-  event_source_arn = aws_sqs_queue.reyGasExpress_order_queue.arn
-  function_name    = aws_lambda_function.process_order_lambda.arn
-  batch_size       = 10
-  enabled          = true
 }
 
 # Crea la función Lambda para "Analizar Preferencias"
@@ -102,10 +80,6 @@ resource "aws_lambda_function" "analyze_preferences_lambda" {
 
   tracing_config {
     mode = "Active"
-  }
-
-  dead_letter_config {
-    target_arn = aws_sqs_queue.reyGasExpress_dlq.arn
   }
 
   tags = {
@@ -146,7 +120,7 @@ resource "aws_lambda_permission" "allow_eventbridge_invoke_analyze_preferences_l
 resource "aws_cloudwatch_event_target" "analyze_preferences_lambda_target" {
   rule           = aws_cloudwatch_event_rule.analyze_preferences_rule.name
   arn            = aws_lambda_function.analyze_preferences_lambda.arn
-  event_bus_name = aws_cloudwatch_event_bus.reyGasExpress_event_bus.name # Nuestro EventBus personalizado
+  event_bus_name = aws_cloudwatch_event_bus.reyGasExpress_event_bus.name
 }
 
 # Crea la función Lambda para "Generar Documento de Reporte de preferencias"
@@ -172,10 +146,6 @@ resource "aws_lambda_function" "generate_report_lambda" {
 
   tracing_config {
     mode = "Active"
-  }
-
-  dead_letter_config {
-    target_arn = aws_sqs_queue.reyGasExpress_dlq.arn
   }
 
   tags = {
@@ -217,23 +187,10 @@ resource "aws_lambda_function" "send_email_report_lambda" {
     mode = "Active"
   }
 
-  dead_letter_config {
-    target_arn = aws_sqs_queue.reyGasExpress_dlq.arn
-  }
-
   tags = {
     Environment = var.environment
     Application = "reyGasExpress"
     ManagedBy   = "Terraform"
-  }
-}
-
-resource "aws_sqs_queue" "reyGasExpress_dlq" {
-  name = "reyGasExpress-registerOrder-dlq-${var.environment}"
-
-  tags = {
-    Environment = var.environment
-    Application = "reyGasExpress"
   }
 }
 
