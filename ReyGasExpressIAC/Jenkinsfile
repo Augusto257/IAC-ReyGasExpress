@@ -6,7 +6,7 @@ pipeline {
     }
 
     stages {
-
+        
         stage('Clonar repositorio') {
             steps {
                 git branch: 'feature/cloudwatch-dashboard', url: 'https://github.com/Augusto257/IAC-ReyGasExpress.git'
@@ -21,10 +21,28 @@ pipeline {
             }
         }
 
+        stage('Terraform Format') {
+            steps {
+                dir('ReyGasExpressIAC') {
+                    sh 'terraform fmt -check -recursive'
+                }
+            }
+        }
+
         stage('Terraform Validate') {
             steps {
                 dir('ReyGasExpressIAC') {
                     sh 'terraform validate'
+                }
+            }
+        }
+
+        stage('Terraform Security Scan') {
+            steps {
+                dir('ReyGasExpressIAC') {
+                    sh '''
+                        checkov -d . -o junitxml > checkov-report.xml || true
+                    '''
                 }
             }
         }
@@ -58,6 +76,17 @@ pipeline {
                     }
                 }
             }
+        }
+    }
+
+    post {
+        always {
+            // Publicar resultados del análisis de seguridad como pruebas
+            junit 'ReyGasExpressIAC/checkov-report.xml'
+        }
+
+        success {
+            archiveArtifacts artifacts: 'ReyGasExpressIAC/tfplan', fingerprint: true
         }
     }
 }
