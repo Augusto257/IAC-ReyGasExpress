@@ -1,6 +1,6 @@
 # Secrets Manager para almacenar la contraseña de la base de datos
 resource "aws_secretsmanager_secret" "db_master_password" {
-  name        = "reyGasExpress-db-master-password-${var.environment}-v7" #(CAMBIAR)
+  name        = "reyGasExpress-db-master-password-${var.environment}-v8" 
   description = "Contraseña maestra para la instancia RDS de ReyGasExpress"
 
   tags = {

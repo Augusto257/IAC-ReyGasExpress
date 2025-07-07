@@ -10,15 +10,11 @@ resource "aws_cloudfront_origin_access_control" "reygas_oac" {
 
 # Introduce una pausa de 60 segundos en el procesos de despliegue de Terraform
 resource "null_resource" "waf_propagation_delay" {
-  depends_on = [aws_wafv2_web_acl.reyGasExpress_waf]
-
   provisioner "local-exec" {
-    command = "powershell.exe -Command \"Start-Sleep -Seconds 60\""
-  }
-  triggers = {
-    waf_id = aws_wafv2_web_acl.reyGasExpress_waf.id
+    command = "sleep 60"
   }
 }
+
 
 resource "aws_lambda_function" "load_balancer_lambda" {
   function_name = "reyGasExpress-load-balancer-${var.environment}"
